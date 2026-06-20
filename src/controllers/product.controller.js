@@ -193,12 +193,20 @@ async function getMyProducts(req, res) {
 }
 
 // all public or user controllers
-// get all products
+// get all products and get product by search, category, min max price, Pagination
 async function getAllProducts(req, res) {
   try {
-    const { search } = req.query;
+    const {
+      search,
+      category,
+      minPrice,
+      maxPrice,
+      page = 1,
+      limit = 10,
+    } = req.query;
     const query = {};
 
+    // search product
     if (search) {
       query.name = {
         $regex: search,
@@ -206,10 +214,37 @@ async function getAllProducts(req, res) {
       };
     }
 
-    const products = await productModel.find(query);
+    // search product by category
+    if (category) {
+      query.category = category;
+    }
+
+    // search product by min max price
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) {
+        query.price.$gte = Number(minPrice);
+      }
+      if (maxPrice) {
+        query.price.$lte = Number(maxPrice);
+      }
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const totalProducts = await productModel.countDocuments(query);
+    const products = await productModel
+      .find(query)
+      .skip(skip)
+      .limit(Number(limit));
+
+    const totalPages = Math.ceil(totalProducts / Number(limit));
 
     return res.status(200).json({
       success: true,
+      page: Number(page),
+      limit: Number(limit),
+      totalProducts,
+      totalPages,
       count: products.length,
       products,
     });
@@ -225,9 +260,9 @@ async function getAllProducts(req, res) {
 async function getProductById(req, res) {
   try {
     const { id } = req.params;
-    const products = await productModel.findById(id); // find by id
+    const product = await productModel.findById(id); // find by id
 
-    if (!products) {
+    if (!product) {
       return res.status(404).json({
         success: false,
         message: "Product not found",
@@ -236,7 +271,7 @@ async function getProductById(req, res) {
 
     return res.status(200).json({
       success: true,
-      products,
+      product,
     });
   } catch (error) {
     return res.status(500).json({

@@ -54,8 +54,15 @@ router.get(
   productController.getMyProductById,
 );
 
-// user product routes
-// get all products
+// public product routes
+// GET /api/v1/products     //All products
+// GET /api/v1/products?search=iphone     //Search
+// GET /api/v1/products?category=Electronics    //Category only
+// GET /api/v1/products?search=iphone&category=Electronics    //Search + Category
+// GET /api/v1/products?minPrice=10000&maxPrice=70000     // Price Range
+// GET /api/v1/products?minPrice=10000&maxPrice=70000     //Combined Filters
+// GET /api/v1/products?page=1&limit=5    // First 5 products Pagination
+// GET /api/v1/products?search=iphone&category=Electronics&minPrice=10000&maxPrice=100000&page=1&limit=5    //Combined Everything
 router.get("/", productController.getAllProducts);
 router.get("/:id", productController.getProductById);
 
