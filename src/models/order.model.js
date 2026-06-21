@@ -43,7 +43,32 @@ const orderSchema = mongoose.Schema(
       ],
       default: "pending",
     },
+    razorpayOrderId: {
+      type: String,
+    },
+    razorpayPaymentId: {
+      type: String,
+    },
+    address: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Address",
+      required: true,
+    },
+    paymentMethod: {
+      type: String,
+      enum: ["cod", "razorpay"],
+      required: true,
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "failed", "refunded"],
+      default: "pending",
+    },
+    paidAt: {
+      type: Date,
+    },
   },
+  
   {
     timestamps: true,
   },
