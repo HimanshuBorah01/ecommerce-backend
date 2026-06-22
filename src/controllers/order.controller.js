@@ -1,9 +1,33 @@
 import cartModel from "../models/cart.model.js";
 import orderModel from "../models/order.model.js";
+import addressModel from "../models/address.model.js";
+import razorpay from "../services/razorpay.service.js";
 
 // create order controller
 async function createOrder(req, res) {
   try {
+    const { addressId, paymentMethod } = req.body;
+    // validate the payment method
+    if (!["cod", "razorpay"].includes(paymentMethod)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payment method",
+      });
+    }
+
+    // find the address and validate
+    const address = await addressModel.findOne({
+      _id: addressId,
+      user: req.user._id,
+    });
+
+    if (!address) {
+      return res.status(404).json({
+        success: false,
+        message: "Address not found",
+      });
+    }
+
     // find the cart items first and populate
     const cartItems = await cartModel
       .find({
@@ -35,7 +59,27 @@ async function createOrder(req, res) {
       user: req.user._id,
       items,
       totalAmount,
+      address: addressId,
+      paymentMethod,
     });
+
+    if (paymentMethod === "razorpay") {
+      const razorpayOrder = await razorpay.orders.create({
+        amount: totalAmount * 100,
+        currency: "INR",
+        receipt: order._id.toString(),
+      });
+
+      order.razorpayOrderId = razorpayOrder.id;
+      await order.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Order created. Proceed to payment.",
+        order,
+        razorpayOrder,
+      });
+    }
 
     await cartModel.deleteMany({
       user: req.user._id,
