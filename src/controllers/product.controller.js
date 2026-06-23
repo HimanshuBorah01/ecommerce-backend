@@ -216,7 +216,10 @@ async function getAllProducts(req, res) {
 
     // search product by category
     if (category) {
-      query.category = category;
+      query.category = {
+        $regex: `^${category}$`,
+        $options: `i`,
+      };
     }
 
     // search product by min max price

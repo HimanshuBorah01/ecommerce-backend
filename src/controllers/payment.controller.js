@@ -5,6 +5,18 @@ import config from "../config/config.js";
 import orderModel from "../models/order.model.js";
 import cartModel from "../models/cart.model.js";
 
+// LEGACY TEST ENDPOINT
+// Purpose:
+// 1. Verify Razorpay SDK configuration.
+// 2. Verify API keys.
+// 3. Test Razorpay order creation independently.
+//
+// Not used by the actual ecommerce checkout flow.
+// Actual flow:
+// POST /orders
+// -> orderController.createOrder()
+// -> razorpay.orders.create()
+// -> verifyPayment()
 // create payment order
 async function createRazorpayOrder(req, res) {
   try {

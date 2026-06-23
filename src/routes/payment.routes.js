@@ -5,6 +5,10 @@ import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
+// TEST ROUTE ONLY
+// Used during Razorpay integration testing.
+// Actual Razorpay orders are now created from orderController.createOrder().
+// Can be removed later if no longer needed.
 // create payment route
 router.post(
   "/create-order",
