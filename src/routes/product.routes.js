@@ -13,6 +13,7 @@ const router = express.Router();
 
 // seller product routes
 // product create route
+// POST /api/v1/products/create
 router.post(
   "/create",
   authMiddleware.protect,
@@ -22,6 +23,7 @@ router.post(
 );
 
 // update a my product
+// PUT /api/v1/products/:id
 router.put(
   "/:id",
   authMiddleware.protect,
@@ -31,6 +33,7 @@ router.put(
 );
 
 // delete my product
+// DELETE /api/v1/products/:id
 router.delete(
   "/:id",
   authMiddleware.protect,
@@ -39,6 +42,7 @@ router.delete(
 );
 
 // get my products
+// GET /api/v1/products/my-products
 router.get(
   "/my-products",
   authMiddleware.protect,
@@ -47,6 +51,7 @@ router.get(
 );
 
 // get my product my id
+// GET /api/v1/products/my-products/:id
 router.get(
   "/my-products/:id",
   authMiddleware.protect,
@@ -66,4 +71,30 @@ router.get(
 router.get("/", productController.getAllProducts);
 router.get("/:id", productController.getProductById);
 
+// add review to product
+// POST /api/v1/products/:id/reviews
+router.post(
+  "/:id/reviews",
+  authMiddleware.protect,
+  authMiddleware.userOnly,
+  productController.addReview,
+);
+
+// update review
+// PUT /api/v1/products/:id/reviews
+router.put(
+  "/:id/reviews",
+  authMiddleware.protect,
+  authMiddleware.userOnly,
+  productController.updateReview,
+);
+
+// delete review 
+// DELETE /api/v1/products/:id/reviews
+router.delete(
+  "/:id/reviews",
+  authMiddleware.protect,
+  authMiddleware.userOnly,
+  productController.deleteReview,
+);
 export default router;

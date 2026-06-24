@@ -1,3 +1,4 @@
+import orderModel from "../models/order.model.js";
 import productModel from "../models/product.model.js";
 import { uploadFile, deleteFile } from "../services/storage.service.js";
 
@@ -218,7 +219,7 @@ async function getAllProducts(req, res) {
     if (category) {
       query.category = {
         $regex: `^${category}$`,
-        $options: `i`,
+        $options: "i",
       };
     }
 
@@ -284,6 +285,191 @@ async function getProductById(req, res) {
   }
 }
 
+// add review to product
+async function addReview(req, res) {
+  try {
+    const { rating, comment } = req.body;
+
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Rating must be between 1 and 5",
+      });
+    }
+
+    const product = await productModel.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    // allow review only if product was delivered, returned, or refunded
+    const deliveredOrder = await orderModel.findOne({
+      user: req.user._id,
+      status: {
+        $in: ["delivered", "returned", "refunded"],
+      },
+      "items.product": req.params.id,
+    });
+
+    if (!deliveredOrder) {
+      return res.status(400).json({
+        success: false,
+        message: "You can review only products you have received",
+      });
+    }
+
+    // check review user === request user
+    const existingReview = product.reviews.find(
+      (review) => review.user.toString() === req.user._id.toString(),
+    );
+
+    if (existingReview) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already reviewed this product",
+      });
+    }
+
+    product.reviews.push({
+      user: req.user._id,
+      rating,
+      comment,
+    });
+
+    product.numberOfReviews = product.reviews.length;
+
+    product.averageRating =
+      product.reviews.reduce((sum, review) => sum + review.rating, 0) /
+      product.reviews.length;
+
+    await product.save();
+
+    return res.status(201).json({
+      success: true,
+      message: "Review added successfully",
+      product,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+// update review
+async function updateReview(req, res) {
+  try {
+    const { rating, comment } = req.body;
+
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Rating must be between 1 and 5",
+      });
+    }
+
+    const product = await productModel.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    // check review user === request user
+    const review = product.reviews.find(
+      (review) => review.user.toString() === req.user._id.toString(),
+    );
+
+    if (!review) {
+      return res.status(404).json({
+        success: false,
+        message: "Review not found",
+      });
+    }
+
+    // update review
+    review.rating = rating;
+    review.comment = comment;
+
+    product.averageRating =
+      product.reviews.reduce((sum, review) => sum + review.rating, 0) /
+      product.reviews.length;
+
+    await product.save();
+
+    return res.status(200).json({
+      success: true,
+      message: " Review updated successfully",
+      product,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+// delete review
+async function deleteReview(req, res) {
+  try {
+    const product = await productModel.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    const review = product.reviews.find(
+      (review) => review.user.toString() === req.user._id.toString(),
+    );
+
+    if (!review) {
+      return res.status(404).json({
+        success: false,
+        message: "Review not found",
+      });
+    }
+
+    // delete review
+    product.reviews = product.reviews.filter(
+      (review) => review.user.toString() !== req.user._id.toString(),
+    );
+
+    product.numberOfReviews = product.reviews.length;
+
+    if (product.reviews.length === 0) {
+      product.averageRating = 0;
+    } else {
+      product.averageRating =
+        product.reviews.reduce((sum, review) => sum + review.rating, 0) /
+        product.reviews.length;
+    }
+
+    await product.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Review deleted successfully",
+      product,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
 export const productController = {
   createProduct,
   updateProduct,
@@ -292,4 +478,7 @@ export const productController = {
   getMyProducts,
   getAllProducts,
   getProductById,
+  addReview,
+  updateReview,
+  deleteReview,
 };
