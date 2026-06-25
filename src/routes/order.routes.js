@@ -46,6 +46,7 @@ router.put(
 );
 
 // update order status by seller
+// PUT /api/v1/orders/:id/status
 router.put(
   "/:id/status",
   authMiddleware.protect,

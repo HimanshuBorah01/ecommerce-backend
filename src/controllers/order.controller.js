@@ -267,7 +267,14 @@ async function updateOrderStatus(req, res) {
       });
     }
 
+    // If a Cash on Delivery (COD) order is delivered,
+    // automatically mark the payment as paid.
     order.status = status;
+    if (order.paymentMethod === "cod" && status === "delivered") {
+      order.paymentStatus = "paid";
+      order.paidAt = new Date();
+    }
+
     await order.save();
 
     return res.status(200).json({
