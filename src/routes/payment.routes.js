@@ -10,6 +10,7 @@ const router = express.Router();
 // Actual Razorpay orders are now created from orderController.createOrder().
 // Can be removed later if no longer needed.
 // create payment route
+// POST /api/v1/payment/create-order
 router.post(
   "/create-order",
   authMiddleware.protect,
@@ -18,6 +19,7 @@ router.post(
 );
 
 // verify payment
+// POST /api/v1/payment/verify-payment
 router.post(
   "/verify-payment",
   authMiddleware.protect,

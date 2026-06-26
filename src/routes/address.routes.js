@@ -6,6 +6,7 @@ import { authMiddleware } from "../middleware/auth.middleware.js";
 const router = express.Router();
 
 // add user address
+// POST /api/v1/addresses
 router.post(
   "/",
   authMiddleware.protect,
@@ -14,6 +15,7 @@ router.post(
 );
 
 // get user address
+// GET /api/v1/addresses
 router.get(
   "/",
   authMiddleware.protect,
@@ -22,6 +24,7 @@ router.get(
 );
 
 // get user address by id
+// GET /api/v1/addresses/:id
 router.get(
   "/:id",
   authMiddleware.protect,
@@ -30,6 +33,7 @@ router.get(
 );
 
 // update address
+// PUT /api/v1/addresses/:id
 router.put(
   "/:id",
   authMiddleware.protect,
@@ -38,6 +42,7 @@ router.put(
 );
 
 // delete address
+// DELETE /api/v1/addresses/:delete
 router.delete(
   "/:id",
   authMiddleware.protect,

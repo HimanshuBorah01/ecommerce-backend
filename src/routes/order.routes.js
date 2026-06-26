@@ -6,6 +6,7 @@ import { authMiddleware } from "../middleware/auth.middleware.js";
 const router = express.Router();
 
 // create order route
+// POST /api/v1/orders
 router.post(
   "/",
   authMiddleware.protect,
@@ -14,6 +15,7 @@ router.post(
 );
 
 // get my all orders
+// GET /api/v1/orders/my-orders
 router.get(
   "/my-orders",
   authMiddleware.protect,
@@ -22,6 +24,7 @@ router.get(
 );
 
 // get all the seller orders
+// GET /api/v1/orders/seller-order
 router.get(
   "/seller-orders",
   authMiddleware.protect,
@@ -30,6 +33,7 @@ router.get(
 );
 
 // get my order my id
+// GET /api/v1/orders/:id
 router.get(
   "/:id",
   authMiddleware.protect,
@@ -38,6 +42,7 @@ router.get(
 );
 
 //cancel my order
+// PUT /api/v1/orders/:id/cancel 
 router.put(
   "/:id/cancel",
   authMiddleware.protect,
