@@ -264,7 +264,9 @@ async function getAllProducts(req, res) {
 async function getProductById(req, res) {
   try {
     const { id } = req.params;
-    const product = await productModel.findById(id); // find by id
+    const product = await productModel
+      .findById(id)
+      .populate("reviews.user", "name"); // find by id
 
     if (!product) {
       return res.status(404).json({
