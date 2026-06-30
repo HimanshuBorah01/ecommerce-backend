@@ -1,6 +1,12 @@
 import express from "express";
 
-import { addressController } from "../controllers/address.controller.js";
+import {
+  createAddress,
+  getMyAddresses,
+  getMyAddressById,
+  updateMyAddress,
+  deleteMyAddress,
+} from "../controllers/address.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
@@ -11,7 +17,7 @@ router.post(
   "/",
   authMiddleware.protect,
   authMiddleware.userOnly,
-  addressController.createAddress,
+  createAddress,
 );
 
 // get user address
@@ -20,7 +26,7 @@ router.get(
   "/",
   authMiddleware.protect,
   authMiddleware.userOnly,
-  addressController.getMyAddresses,
+  getMyAddresses,
 );
 
 // get user address by id
@@ -29,7 +35,7 @@ router.get(
   "/:id",
   authMiddleware.protect,
   authMiddleware.userOnly,
-  addressController.getMyAddressById,
+  getMyAddressById,
 );
 
 // update address
@@ -38,7 +44,7 @@ router.put(
   "/:id",
   authMiddleware.protect,
   authMiddleware.userOnly,
-  addressController.updateMyAddress,
+  updateMyAddress,
 );
 
 // delete address
@@ -47,7 +53,7 @@ router.delete(
   "/:id",
   authMiddleware.protect,
   authMiddleware.userOnly,
-  addressController.deleteMyAddress,
+  deleteMyAddress,
 );
 
 export default router;
