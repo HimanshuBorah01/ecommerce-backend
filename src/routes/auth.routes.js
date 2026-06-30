@@ -2,7 +2,11 @@ import express from "express";
 
 import { validationMiddleware } from "../middleware/validation.middleware.js";
 
-import { authController } from "../controllers/auth.controller.js";
+import {
+  registerUser,
+  loginUser,
+  logoutUser,
+} from "../controllers/auth.controller.js";
 
 const router = express.Router();
 
@@ -12,15 +16,15 @@ const router = express.Router();
 router.post(
   "/register",
   validationMiddleware.registerValidationRules,
-  authController.registerUser,
+  registerUser,
 );
 
 // login user
 // POST /api/v1/auth/login
-router.post("/login", authController.loginUser);
+router.post("/login", loginUser);
 
 // logout user
 // POST /api/v1/auth/logout
-router.post("/logout", authController.logoutUser);
+router.post("/logout", logoutUser);
 
 export default router;
