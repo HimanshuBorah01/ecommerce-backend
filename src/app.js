@@ -1,5 +1,6 @@
 import express from "express";
 import cookieParser from "cookie-parser";
+import errorMiddleware from "./middleware/error.middleware.js";
 
 const app = express();
 app.use(express.json());
@@ -21,5 +22,7 @@ app.use("/api/v1/orders", orderRoutes);
 app.use("/api/v1/addresses", addressRoutes);
 app.use("/api/v1/payment", paymentRoutes);
 app.use("/api/v1/wishlist", wishlistRoutes);
+
+app.use(errorMiddleware);
 
 export default app;

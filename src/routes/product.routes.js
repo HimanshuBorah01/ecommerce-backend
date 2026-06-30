@@ -1,7 +1,18 @@
 import express from "express";
 import multer from "multer";
 
-import { productController } from "../controllers/product.controller.js";
+import {
+  createProduct,
+  updateProduct,
+  deleteMyProduct,
+  getMyProductById,
+  getMyProducts,
+  getAllProducts,
+  getProductById,
+  addReview,
+  updateReview,
+  deleteReview,
+} from "../controllers/product.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
 // multer is using for accepting data in  file or buffer format
@@ -19,7 +30,7 @@ router.post(
   authMiddleware.protect,
   authMiddleware.sellerOnly,
   upload.array("image", 10),
-  productController.createProduct,
+  createProduct,
 );
 
 // update a my product
@@ -29,7 +40,7 @@ router.put(
   authMiddleware.protect,
   authMiddleware.sellerOnly,
   upload.array("image", 10),
-  productController.updateProduct,
+  updateProduct,
 );
 
 // delete my product
@@ -38,7 +49,7 @@ router.delete(
   "/:id",
   authMiddleware.protect,
   authMiddleware.sellerOnly,
-  productController.deleteMyProduct,
+  deleteMyProduct,
 );
 
 // get my products
@@ -47,7 +58,7 @@ router.get(
   "/my-products",
   authMiddleware.protect,
   authMiddleware.sellerOnly,
-  productController.getMyProducts,
+  getMyProducts,
 );
 
 // get my product my id
@@ -56,7 +67,7 @@ router.get(
   "/my-products/:id",
   authMiddleware.protect,
   authMiddleware.sellerOnly,
-  productController.getMyProductById,
+  getMyProductById,
 );
 
 // public product routes
@@ -68,8 +79,8 @@ router.get(
 // GET /api/v1/products?minPrice=10000&maxPrice=70000     //Combined Filters
 // GET /api/v1/products?page=1&limit=5    // First 5 products Pagination
 // GET /api/v1/products?search=iphone&category=Electronics&minPrice=10000&maxPrice=100000&page=1&limit=5    //Combined Everything
-router.get("/", productController.getAllProducts);
-router.get("/:id", productController.getProductById);
+router.get("/", getAllProducts);
+router.get("/:id", getProductById);
 
 // add review to product
 // POST /api/v1/products/:id/reviews
@@ -77,7 +88,7 @@ router.post(
   "/:id/reviews",
   authMiddleware.protect,
   authMiddleware.userOnly,
-  productController.addReview,
+  addReview,
 );
 
 // update review
@@ -86,15 +97,15 @@ router.put(
   "/:id/reviews",
   authMiddleware.protect,
   authMiddleware.userOnly,
-  productController.updateReview,
+  updateReview,
 );
 
-// delete review 
+// delete review
 // DELETE /api/v1/products/:id/reviews
 router.delete(
   "/:id/reviews",
   authMiddleware.protect,
   authMiddleware.userOnly,
-  productController.deleteReview,
+  deleteReview,
 );
 export default router;
