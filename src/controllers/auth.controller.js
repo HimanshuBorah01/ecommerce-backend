@@ -1,11 +1,11 @@
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 
 import userModel from "../models/user.model.js";
-import config from "../config/config.js";
 
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
+import generateToken from "../utils/generateToken.js";
+import cookieOptions from "../utils/cookieOptions.js";
 
 /**
  * Register a new user
@@ -14,13 +14,13 @@ import ApiError from "../utils/ApiError.js";
 */
 // Register a new user
 export const registerUser = asyncHandler(async (req, res) => {
-  const { name, phone, email, password, role = "user" } = req.body;
+  const { name, phone, email, password } = req.body;
 
-  const isUserAlreadyExist = await userModel.findOne({
+  const userExists = await userModel.findOne({
     $or: [{ phone }, { email }],
   });
 
-  if (isUserAlreadyExist) {
+  if (userExists) {
     throw new ApiError(
       409,
       "User with this phone number or email already exist",
@@ -35,22 +35,13 @@ export const registerUser = asyncHandler(async (req, res) => {
     phone,
     email,
     password: hash,
-    role,
+    role: "user",
   });
 
-  // create jwt token
-  const token = jwt.sign(
-    {
-      id: user._id,
-      role: user.role,
-    },
-    config.JWT_SECRET,
-    {
-      expiresIn: "30d",
-    },
-  );
+  // generate authentication token
+  const token = generateToken(user);
 
-  res.cookie("token", token);
+  res.cookie("token", token, cookieOptions);
 
   res.status(201).json({
     success: true,
@@ -69,9 +60,11 @@ export const registerUser = asyncHandler(async (req, res) => {
 export const loginUser = asyncHandler(async (req, res) => {
   const { phone, email, password } = req.body;
 
-  const user = await userModel.findOne({
-    $or: [{ phone }, { email }],
-  });
+  const user = await userModel
+    .findOne({
+      $or: [{ phone }, { email }],
+    })
+    .select("+password");
 
   if (!user) {
     throw new ApiError(401, "Invalid email or phone number ");
@@ -84,19 +77,10 @@ export const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid password");
   }
 
-  // create jwt token
-  const token = jwt.sign(
-    {
-      id: user._id,
-      role: user.role,
-    },
-    config.JWT_SECRET,
-    {
-      expiresIn: "30d",
-    },
-  );
+  // generate authentication token
+  const token = generateToken(user);
 
-  res.cookie("token", token);
+  res.cookie("token", token, cookieOptions);
 
   res.status(200).json({
     success: true,
@@ -113,10 +97,10 @@ export const loginUser = asyncHandler(async (req, res) => {
 
 // Logout user
 export const logoutUser = asyncHandler(async (req, res) => {
-  res.clearCookie("token");
+  res.clearCookie("token", cookieOptions);
 
   return res.status(200).json({
     success: true,
-    message: "User logout successful",
+    message: "User logged out successfully",
   });
 });
