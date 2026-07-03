@@ -13,7 +13,8 @@ import {
   updateReview,
   deleteReview,
 } from "../controllers/product.controller.js";
-import { authMiddleware } from "../middleware/auth.middleware.js";
+import { protect, authorize } from "../middleware/auth.middleware.js";
+import { ROLES } from "../constants/roles.js";
 
 // multer is using for accepting data in  file or buffer format
 const upload = multer({
@@ -27,8 +28,8 @@ const router = express.Router();
 // POST /api/v1/products/create
 router.post(
   "/create",
-  authMiddleware.protect,
-  authMiddleware.sellerOnly,
+  protect,
+  authorize(ROLES.SELLER),
   upload.array("image", 10),
   createProduct,
 );
@@ -37,8 +38,8 @@ router.post(
 // PUT /api/v1/products/:id
 router.put(
   "/:id",
-  authMiddleware.protect,
-  authMiddleware.sellerOnly,
+  protect,
+  authorize(ROLES.SELLER),
   upload.array("image", 10),
   updateProduct,
 );
@@ -47,8 +48,8 @@ router.put(
 // DELETE /api/v1/products/:id
 router.delete(
   "/:id",
-  authMiddleware.protect,
-  authMiddleware.sellerOnly,
+  protect,
+  authorize(ROLES.SELLER),
   deleteMyProduct,
 );
 
@@ -56,8 +57,8 @@ router.delete(
 // GET /api/v1/products/my-products
 router.get(
   "/my-products",
-  authMiddleware.protect,
-  authMiddleware.sellerOnly,
+  protect,
+  authorize(ROLES.SELLER),
   getMyProducts,
 );
 
@@ -65,8 +66,8 @@ router.get(
 // GET /api/v1/products/my-products/:id
 router.get(
   "/my-products/:id",
-  authMiddleware.protect,
-  authMiddleware.sellerOnly,
+  protect,
+  authorize(ROLES.SELLER),
   getMyProductById,
 );
 
@@ -86,8 +87,8 @@ router.get("/:id", getProductById);
 // POST /api/v1/products/:id/reviews
 router.post(
   "/:id/reviews",
-  authMiddleware.protect,
-  authMiddleware.userOnly,
+  protect,
+  authorize(ROLES.USER),
   addReview,
 );
 
@@ -95,8 +96,8 @@ router.post(
 // PUT /api/v1/products/:id/reviews
 router.put(
   "/:id/reviews",
-  authMiddleware.protect,
-  authMiddleware.userOnly,
+  protect,
+  authorize(ROLES.USER),
   updateReview,
 );
 
@@ -104,8 +105,8 @@ router.put(
 // DELETE /api/v1/products/:id/reviews
 router.delete(
   "/:id/reviews",
-  authMiddleware.protect,
-  authMiddleware.userOnly,
+  protect,
+  authorize(ROLES.USER),
   deleteReview,
 );
 export default router;

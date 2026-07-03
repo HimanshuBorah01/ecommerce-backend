@@ -8,7 +8,8 @@ import {
   cancelMyOrder,
   updateOrderStatus,
 } from "../controllers/order.controller.js";
-import { authMiddleware } from "../middleware/auth.middleware.js";
+import { protect, authorize } from "../middleware/auth.middleware.js";
+import { ROLES } from "../constants/roles.js";
 
 const router = express.Router();
 
@@ -16,8 +17,8 @@ const router = express.Router();
 // POST /api/v1/orders
 router.post(
   "/",
-  authMiddleware.protect,
-  authMiddleware.userOnly,
+  protect,
+  authorize(ROLES.USER),
   createOrder,
 );
 
@@ -25,8 +26,8 @@ router.post(
 // GET /api/v1/orders/my-orders
 router.get(
   "/my-orders",
-  authMiddleware.protect,
-  authMiddleware.userOnly,
+  protect,
+  authorize(ROLES.USER),
   getMyOrder,
 );
 
@@ -34,8 +35,8 @@ router.get(
 // GET /api/v1/orders/seller-order
 router.get(
   "/seller-orders",
-  authMiddleware.protect,
-  authMiddleware.sellerOnly,
+  protect,
+  authorize(ROLES.SELLER),
   getSellerOrders,
 );
 
@@ -43,8 +44,8 @@ router.get(
 // GET /api/v1/orders/:id
 router.get(
   "/:id",
-  authMiddleware.protect,
-  authMiddleware.userOnly,
+  protect,
+  authorize(ROLES.USER),
   getMyOrderById,
 );
 
@@ -52,8 +53,8 @@ router.get(
 // PUT /api/v1/orders/:id/cancel 
 router.put(
   "/:id/cancel",
-  authMiddleware.protect,
-  authMiddleware.userOnly,
+  protect,
+  authorize(ROLES.USER),
   cancelMyOrder,
 );
 
@@ -61,8 +62,8 @@ router.put(
 // PUT /api/v1/orders/:id/status
 router.put(
   "/:id/status",
-  authMiddleware.protect,
-  authMiddleware.sellerOnly,
+  protect,
+  authorize(ROLES.SELLER),
   updateOrderStatus,
 );
 

@@ -7,7 +7,8 @@ import {
   updateMyAddress,
   deleteMyAddress,
 } from "../controllers/address.controller.js";
-import { authMiddleware } from "../middleware/auth.middleware.js";
+import { protect, authorize } from "../middleware/auth.middleware.js";
+import { ROLES } from "../constants/roles.js";
 
 const router = express.Router();
 
@@ -15,8 +16,8 @@ const router = express.Router();
 // POST /api/v1/addresses
 router.post(
   "/",
-  authMiddleware.protect,
-  authMiddleware.userOnly,
+  protect,
+  authorize(ROLES.USER),
   createAddress,
 );
 
@@ -24,8 +25,8 @@ router.post(
 // GET /api/v1/addresses
 router.get(
   "/",
-  authMiddleware.protect,
-  authMiddleware.userOnly,
+  protect,
+  authorize(ROLES.USER),
   getMyAddresses,
 );
 
@@ -33,8 +34,8 @@ router.get(
 // GET /api/v1/addresses/:id
 router.get(
   "/:id",
-  authMiddleware.protect,
-  authMiddleware.userOnly,
+  protect,
+  authorize(ROLES.USER),
   getMyAddressById,
 );
 
@@ -42,8 +43,8 @@ router.get(
 // PUT /api/v1/addresses/:id
 router.put(
   "/:id",
-  authMiddleware.protect,
-  authMiddleware.userOnly,
+  protect,
+  authorize(ROLES.USER),
   updateMyAddress,
 );
 
@@ -51,8 +52,8 @@ router.put(
 // DELETE /api/v1/addresses/:delete
 router.delete(
   "/:id",
-  authMiddleware.protect,
-  authMiddleware.userOnly,
+  protect,
+  authorize(ROLES.USER),
   deleteMyAddress,
 );
 

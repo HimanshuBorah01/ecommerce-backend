@@ -1,5 +1,6 @@
 import express from "express";
-import { authMiddleware } from "../middleware/auth.middleware.js";
+import { protect, authorize } from "../middleware/auth.middleware.js";
+import { ROLES } from "../constants/roles.js";
 import {
   addWishlist,
   getWishlist,
@@ -12,21 +13,21 @@ const router = express.Router();
 // POST /api/v1/wishlist/:productId
 router.post(
   "/:productId",
-  authMiddleware.protect,
-  authMiddleware.userOnly,
+  protect,
+  authorize(ROLES.USER),
   addWishlist,
 );
 
 // get user wishlist
 // GET /api/v1/wishlist
-router.get("/", authMiddleware.protect, authMiddleware.userOnly, getWishlist);
+router.get("/", protect, authorize(ROLES.USER), getWishlist);
 
 // remove product from wishlist
 // DELETE /api/v1/wishlist/:productId
 router.delete(
   "/:productId",
-  authMiddleware.protect,
-  authMiddleware.userOnly,
+  protect,
+  authorize(ROLES.USER),
   removeWishlist,
 );
 

@@ -4,7 +4,8 @@ import {
   createRazorpayOrder,
   verifyPayment,
 } from "../controllers/payment.controller.js";
-import { authMiddleware } from "../middleware/auth.middleware.js";
+import { protect, authorize } from "../middleware/auth.middleware.js";
+import { ROLES } from "../constants/roles.js";
 
 const router = express.Router();
 
@@ -16,8 +17,8 @@ const router = express.Router();
 // POST /api/v1/payment/create-order
 router.post(
   "/create-order",
-  authMiddleware.protect,
-  authMiddleware.userOnly,
+  protect,
+  authorize(ROLES.USER),
   createRazorpayOrder,
 );
 
@@ -25,8 +26,8 @@ router.post(
 // POST /api/v1/payment/verify-payment
 router.post(
   "/verify-payment",
-  authMiddleware.protect,
-  authMiddleware.userOnly,
+  protect,
+  authorize(ROLES.USER),
   verifyPayment,
 );
 
