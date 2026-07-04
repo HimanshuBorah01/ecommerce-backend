@@ -39,7 +39,7 @@ export const createProduct = asyncHandler(async (req, res) => {
 
   return res.status(201).json({
     success: true,
-    message: "Product list successfully",
+    message: "Product created successfully",
     product,
   });
 });
@@ -69,16 +69,22 @@ export const updateProduct = asyncHandler(async (req, res) => {
   const files = req.files;
 
   if (files && files.length > 0) {
-    const imageUrls = []; // array of images
+    // Delete old images from cloud storage
+    for (const image of product.images) {
+      await deleteFile(image.fileId);
+    }
 
-    // updating images
+    const imageUrls = [];
+
     for (const file of files) {
       const result = await uploadFile(file.buffer.toString("base64"));
+
       imageUrls.push({
         url: result.url,
         fileId: result.fileId,
       });
     }
+
     product.images = imageUrls;
   }
   await product.save(); // saved
@@ -137,9 +143,11 @@ export const getMyProductById = asyncHandler(async (req, res) => {
 
 // get my products
 export const getMyProducts = asyncHandler(async (req, res) => {
-  const products = await productModel.find({
-    seller: req.user._id,
-  });
+  const products = await productModel
+    .find({
+      seller: req.user._id,
+    })
+    .sort({ createdAt: -1 });
 
   return res.status(200).json({
     success: true,
@@ -192,9 +200,9 @@ export const getAllProducts = asyncHandler(async (req, res) => {
   const totalProducts = await productModel.countDocuments(query);
   const products = await productModel
     .find(query)
+    .sort({ createdAt: -1 })
     .skip(skip)
     .limit(Number(limit));
-
   const totalPages = Math.ceil(totalProducts / Number(limit));
 
   return res.status(200).json({
@@ -227,7 +235,7 @@ export const getProductById = asyncHandler(async (req, res) => {
 
 // add review to product
 export const addReview = asyncHandler(async (req, res) => {
-  const { rating, comment } = req.body;
+  const { rating, comment = "" } = req.body;
 
   if (rating < 1 || rating > 5) {
     throw new ApiError(400, "Rating must be between 1 and 5");
@@ -284,7 +292,7 @@ export const addReview = asyncHandler(async (req, res) => {
 
 // update review
 export const updateReview = asyncHandler(async (req, res) => {
-  const { rating, comment } = req.body;
+  const { rating, comment = "" } = req.body;
 
   if (rating < 1 || rating > 5) {
     throw new ApiError(400, "Rating must be between 1 and 5");
