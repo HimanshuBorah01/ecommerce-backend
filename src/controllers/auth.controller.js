@@ -27,14 +27,14 @@ export const registerUser = asyncHandler(async (req, res) => {
     );
   }
 
-  // password is hashing
-  const hash = await bcrypt.hash(password, 10);
+  // Hash password before saving
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   const user = await userModel.create({
     name,
     phone,
     email,
-    password: hash,
+    password: hashedPassword,
     role: "user",
   });
 
@@ -66,15 +66,16 @@ export const loginUser = asyncHandler(async (req, res) => {
     })
     .select("+password");
 
+  // Check if user exists
   if (!user) {
-    throw new ApiError(401, "Invalid email or phone number ");
+    throw new ApiError(401, "Invalid credentials");
   }
 
-  // validate the password
+  // Validate password
   const isPasswordValid = await bcrypt.compare(password, user.password);
 
   if (!isPasswordValid) {
-    throw new ApiError(401, "Invalid password");
+    throw new ApiError(401, "Invalid credentials");
   }
 
   // generate authentication token
