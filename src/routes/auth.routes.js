@@ -21,7 +21,11 @@ router.post(
 
 // login user
 // POST /api/v1/auth/login
-router.post("/login", loginUser);
+router.post(
+  "/login",
+  validationMiddleware.loginValidationRules,
+  loginUser,
+);
 
 // logout user
 // POST /api/v1/auth/logout
