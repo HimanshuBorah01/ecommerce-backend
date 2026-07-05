@@ -1,7 +1,5 @@
 import bcrypt from "bcryptjs";
-
 import userModel from "../models/user.model.js";
-
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import generateToken from "../utils/generateToken.js";

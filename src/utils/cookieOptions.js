@@ -1,5 +1,6 @@
 import config from "../config/config.js";
 
+// Cookie options for setting cookies in the application
 const cookieOptions = {
   httpOnly: true,
   secure: config.NODE_ENV === "production",
