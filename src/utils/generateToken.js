@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
+import { AUTH } from "../constants/auth.js";
 
 const generateToken = (user) => {
   return jwt.sign(
