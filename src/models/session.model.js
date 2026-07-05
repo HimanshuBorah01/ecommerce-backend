@@ -4,7 +4,7 @@ const sessionSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "users",
+      ref: "User",
       required: [true, "User is required"],
       index: true,
     },
@@ -12,6 +12,7 @@ const sessionSchema = new mongoose.Schema(
     refreshTokenHash: {
       type: String,
       required: [true, "Refresh token hash is required"],
+      select: false,
     },
 
     deviceName: {
@@ -42,6 +43,10 @@ const sessionSchema = new mongoose.Schema(
     revoked: {
       type: Boolean,
       default: false,
+    },
+
+    revokedAt: {
+      type: Date,
     },
   },
   {
