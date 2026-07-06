@@ -36,20 +36,26 @@ class AuthService {
       password: hashedPassword,
     });
 
-    const accessToken = tokenService.generateAccessToken(user);
+    const userResponse = user.toObject();
+    delete userResponse.password;
 
     return {
-      user,
-      accessToken,
+      user: userResponse,
     };
   }
 
   /**
    * Login user.
    */
-  async login({ email, password }) {
-    // Find user by email
-    const user = await userModel.findOne({ email }).select("+password");
+  async login(loginData) {
+    const { email, phone, password } = loginData;
+
+    // Find user by email or phone
+    const user = await userModel
+      .findOne({
+        $or: [{ email }, { phone }],
+      })
+      .select("+password");
 
     if (!user) {
       throw new ApiError(401, "Invalid credentials");
@@ -69,6 +75,9 @@ class AuthService {
     const accessToken = tokenService.generateAccessToken(user);
     const refreshToken = tokenService.generateRefreshToken(user);
 
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
     // Hash refresh token before storing
     const refreshTokenHash = tokenService.hashRefreshToken(refreshToken);
 
@@ -80,7 +89,7 @@ class AuthService {
     });
 
     return {
-      user,
+      user: userResponse,
       accessToken,
       refreshToken,
     };
