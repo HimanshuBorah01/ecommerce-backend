@@ -1,6 +1,7 @@
 import userModel from "../models/user.model.js";
 import passwordService from "./password.service.js";
 import tokenService from "./token.service.js";
+import sessionService from "./session.service.js";
 import ApiError from "../utils/ApiError.js";
 
 /**
@@ -21,7 +22,7 @@ class AuthService {
     });
 
     if (existingUser) {
-      throw new Error("User already exists");
+      throw new ApiError(409, "User with this email or phone already exists");
     }
 
     // Hash password
@@ -35,7 +36,12 @@ class AuthService {
       password: hashedPassword,
     });
 
-    return user;
+    const accessToken = tokenService.generateAccessToken(user);
+
+    return {
+      user,
+      accessToken,
+    };
   }
 
   /**
@@ -59,12 +65,24 @@ class AuthService {
       throw new ApiError(401, "Invalid credentials");
     }
 
-    // Generate access token
+    // Generate tokens
     const accessToken = tokenService.generateAccessToken(user);
+    const refreshToken = tokenService.generateRefreshToken(user);
+
+    // Hash refresh token before storing
+    const refreshTokenHash = tokenService.hashRefreshToken(refreshToken);
+
+    // Create session
+    await sessionService.createSession({
+      user: user._id,
+      refreshTokenHash,
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    });
 
     return {
       user,
       accessToken,
+      refreshToken,
     };
   }
 
