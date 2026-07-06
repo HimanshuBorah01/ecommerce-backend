@@ -1,11 +1,12 @@
 import express from "express";
-
 import { validationMiddleware } from "../middleware/validation.middleware.js";
+import { protect } from "../middleware/auth.middleware.js";
 
 import {
   registerUser,
   loginUser,
   logoutUser,
+  getCurrentUser,
 } from "../controllers/auth.controller.js";
 
 const router = express.Router();
@@ -29,6 +30,10 @@ router.post(
 
 // logout user
 // POST /api/v1/auth/logout
-router.post("/logout", logoutUser);
+router.post("/logout", protect, logoutUser);
+
+// get current authenticated user
+// GET /api/v1/auth/me
+router.get("/me", protect, getCurrentUser);
 
 export default router;

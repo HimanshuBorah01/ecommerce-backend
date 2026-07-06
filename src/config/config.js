@@ -24,8 +24,15 @@ if (!process.env.RAZORPAY_KEY_SECRET) {
     "RAZORPAY_KEY_SECRET is not defined in environment variables.",
   );
 }
-if (!process.env.JWT_EXPIRES_IN) {
-  throw new Error("JWT_EXPIRES_IN is not defined in environment variables.");
+if (!process.env.JWT_ACCESS_TOKEN_EXPIRES_IN) {
+  throw new Error(
+    "JWT_ACCESS_TOKEN_EXPIRES_IN is not defined in environment variables.",
+  );
+}
+if (!process.env.JWT_REFRESH_TOKEN_EXPIRES_IN) {
+  throw new Error(
+    "JWT_REFRESH_TOKEN_EXPIRES_IN is not defined in environment variables.",
+  );
 }
 if (!process.env.NODE_ENV) {
   throw new Error("NODE_ENV is not defined in environment variables.");
@@ -39,7 +46,8 @@ const config = {
   RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID,
   RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
 
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
+  JWT_ACCESS_TOKEN_EXPIRES_IN: process.env.JWT_ACCESS_TOKEN_EXPIRES_IN,
+  JWT_REFRESH_TOKEN_EXPIRES_IN: process.env.JWT_REFRESH_TOKEN_EXPIRES_IN,
   NODE_ENV: process.env.NODE_ENV,
 };
 
