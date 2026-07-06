@@ -16,8 +16,18 @@ class SessionService {
   /**
    * Find a session by its id.
    */
-  async getSessionById(sessionId) {
+  async findSessionById(sessionId) {
     return sessionModel.findById(sessionId);
+  }
+
+  /**
+   * Find session by refresh token hash.
+   */
+  async findSessionByRefreshToken(refreshTokenHash) {
+    return sessionModel.findOne({
+      refreshTokenHash,
+      revoked: false,
+    });
   }
 
   /**
@@ -53,11 +63,45 @@ class SessionService {
   }
 
   /**
+   * Update refresh token hash.
+   */
+  async updateRefreshToken(sessionId, refreshTokenHash, expiresAt) {
+    return sessionModel.findByIdAndUpdate(
+      sessionId,
+      {
+        refreshTokenHash,
+        expiresAt,
+        lastUsedAt: new Date(),
+      },
+      {
+        new: true,
+      },
+    );
+  }
+
+  /**
    * Update last activity of a session.
    */
   async updateLastUsed(sessionId) {
-    return sessionModel.findByIdAndUpdate(sessionId, {
-      lastUsedAt: new Date(),
+    return sessionModel.findByIdAndUpdate(
+      sessionId,
+      {
+        lastUsedAt: new Date(),
+      },
+      {
+        new: true,
+      },
+    );
+  }
+
+  /**
+   * Delete all expired sessions.
+   */
+  async deleteExpiredSessions() {
+    return sessionModel.deleteMany({
+      expiresAt: {
+        $lt: new Date(),
+      },
     });
   }
 }

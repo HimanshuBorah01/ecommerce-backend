@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import crypto from "crypto";
+import ApiError from "../utils/ApiError.js";
 
 /**
  * Token Service
@@ -25,10 +26,25 @@ class TokenService {
   }
 
   /**
+   * Verify Access Token
+   */
+  verifyAccessToken(accessToken) {
+    try {
+      return jwt.verify(accessToken, config.JWT_SECRET);
+    } catch {
+      throw new ApiError(401, "Invalid or expired access token");
+    }
+  }
+
+  /**
    * Verify Refresh Token
    */
   verifyRefreshToken(refreshToken) {
-    return jwt.verify(refreshToken, config.JWT_SECRET);
+    try {
+      return jwt.verify(refreshToken, config.JWT_SECRET);
+    } catch {
+      throw new ApiError(401, "Invalid or expired refresh token");
+    }
   }
 
   /**

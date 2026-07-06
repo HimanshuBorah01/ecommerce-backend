@@ -58,12 +58,11 @@ export const logoutUser = asyncHandler(async (req, res) => {
 
 // Refresh access token
 export const refreshToken = asyncHandler(async (req, res) => {
-  const { accessToken, refreshToken } = await authService.refreshToken(
-    req.cookies,
-  );
+  const { accessToken, refreshToken: newRefreshToken } =
+    await authService.refreshToken(req.cookies);
 
   res.cookie(AUTH.JWT_COOKIE_NAME, accessToken, cookieOptions);
-  res.cookie(AUTH.REFRESH_TOKEN_COOKIE_NAME, refreshToken, cookieOptions);
+  res.cookie(AUTH.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, cookieOptions);
 
   return res.status(200).json({
     success: true,
