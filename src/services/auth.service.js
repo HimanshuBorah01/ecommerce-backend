@@ -1,40 +1,58 @@
+import userModel from "../models/user.model.js";
+import passwordService from "./password.service.js";
+import tokenService from "./token.service.js";
+
 /**
  * Authentication Service
  *
- * This service contains all authentication-related business logic.
- * Controllers should only call these methods and return responses.
+ * Handles authentication business logic.
  */
 class AuthService {
   /**
    * Register a new user.
    */
-  async register() {
-    throw new Error("Not implemented");
+  async register(userData) {
+    const { name, email, phone, password } = userData;
+
+    // Check if user already exists
+    const existingUser = await userModel.findOne({
+      $or: [{ email }, { phone }],
+    });
+
+    if (existingUser) {
+      throw new Error("User already exists");
+    }
+
+    // Hash password
+    const hashedPassword = await passwordService.hashPassword(password);
+
+    // Create user
+    const user = await userModel.create({
+      name,
+      email,
+      phone,
+      password: hashedPassword,
+    });
+
+    return user;
   }
 
   /**
-   * Login a user.
+   * Login user.
    */
   async login() {
     throw new Error("Not implemented");
   }
 
   /**
-   * Logout current session.
+   * Logout user.
    */
   async logout() {
     throw new Error("Not implemented");
   }
 
   /**
-   * Logout all sessions.
-   */
-  async logoutAll() {
-    throw new Error("Not implemented");
-  }
-
-  /**
-   * Refresh access token.
+   * Refresh token.
    */
   async refreshToken() {
     throw new Error("Not implemented");
