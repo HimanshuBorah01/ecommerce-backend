@@ -6,6 +6,10 @@ import {
   registerUser,
   loginUser,
   logoutUser,
+  logoutAllDevices,
+  refreshToken,
+  getCurrentUser,
+  forgotPassword,
 } from "../controllers/auth.controller.js";
 const router = express.Router();
 
@@ -22,8 +26,24 @@ router.post(
 // POST /api/v1/auth/login
 router.post("/login", validationMiddleware.loginValidationRules, loginUser);
 
+// Refresh access token
+// POST /api/v1/auth/refresh-token
+router.post("/refresh-token", refreshToken);
+
 // logout user
 // POST /api/v1/auth/logout
 router.post("/logout", protect, logoutUser);
+
+router.post("/logout-all", protect, logoutAllDevices);
+
+router.post(
+  "/forgot-password",
+  validationMiddleware.forgotPasswordValidationRules,
+  forgotPassword,
+);
+
+// Get current authenticated user
+// GET /api/v1/auth/me
+router.get("/me", protect, getCurrentUser);
 
 export default router;

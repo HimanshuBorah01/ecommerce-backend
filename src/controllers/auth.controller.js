@@ -47,12 +47,31 @@ export const loginUser = asyncHandler(async (req, res) => {
 
 // Logout user
 export const logoutUser = asyncHandler(async (req, res) => {
+  // Revoke current session
+  await authService.logout(req.cookies);
+
+  // Clear cookies
   res.clearCookie(AUTH.JWT_COOKIE_NAME, cookieOptions);
   res.clearCookie(AUTH.REFRESH_TOKEN_COOKIE_NAME, cookieOptions);
 
   return res.status(200).json({
     success: true,
-    message: "User logged out successfully",
+    message: "Logged out successfully",
+  });
+});
+
+/**
+ * Logout user from all devices.
+ */
+export const logoutAllDevices = asyncHandler(async (req, res) => {
+  await authService.logoutAllDevices(req.user._id);
+
+  res.clearCookie(AUTH.JWT_COOKIE_NAME, cookieOptions);
+  res.clearCookie(AUTH.REFRESH_TOKEN_COOKIE_NAME, cookieOptions);
+
+  return res.status(200).json({
+    success: true,
+    message: "Logged out from all devices successfully",
   });
 });
 
@@ -67,5 +86,35 @@ export const refreshToken = asyncHandler(async (req, res) => {
   return res.status(200).json({
     success: true,
     message: "Access token refreshed successfully",
+  });
+});
+
+/**
+ * Get current authenticated user.
+ */
+export const getCurrentUser = asyncHandler(async (req, res) => {
+  return res.status(200).json({
+    success: true,
+    user: {
+      id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      phone: req.user.phone,
+      role: req.user.role,
+    },
+  });
+});
+
+/**
+ * Forgot password.
+ */
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  await authService.forgotPassword(email);
+
+  return res.status(200).json({
+    success: true,
+    message:
+      "If an account with that email exists, a password reset link has been sent.",
   });
 });

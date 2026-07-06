@@ -4,6 +4,9 @@ import tokenService from "./token.service.js";
 import sessionService from "./session.service.js";
 import ApiError from "../utils/ApiError.js";
 import { AUTH } from "../constants/auth.js";
+import passwordResetTokenService from "./passwordResetToken.service.js";
+import emailService from "./email.service.js";
+import config from "../config/config.js";
 
 /**
  * Authentication Service
@@ -72,6 +75,10 @@ class AuthService {
       throw new ApiError(401, "Invalid credentials");
     }
 
+    if (!user.isActive) {
+      throw new ApiError(403, "Account is inactive");
+    }
+
     // Generate tokens
     const accessToken = tokenService.generateAccessToken(user);
     const refreshToken = tokenService.generateRefreshToken(user);
@@ -97,10 +104,28 @@ class AuthService {
   }
 
   /**
-   * Logout user.
+   * Logout current user.
    */
-  async logout() {
-    throw new ApiError(501, "Logout is not implemented yet");
+  async logout(cookies) {
+    const refreshToken = cookies?.[AUTH.REFRESH_TOKEN_COOKIE_NAME];
+
+    // If no refresh token exists, treat logout as successful.
+    if (!refreshToken) {
+      return;
+    }
+
+    const refreshTokenHash = tokenService.hashRefreshToken(refreshToken);
+
+    const session =
+      await sessionService.findSessionByRefreshToken(refreshTokenHash);
+
+    // Session already removed or invalid.
+    if (!session) {
+      return;
+    }
+
+    // Revoke the current session.
+    await sessionService.revokeSession(session._id);
   }
 
   /**
@@ -127,7 +152,7 @@ class AuthService {
       throw new ApiError(401, "Invalid refresh token");
     }
 
-    if (session.isRevoked) {
+    if (session.revoked) {
       throw new ApiError(401, "Session has been revoked");
     }
 
@@ -140,20 +165,80 @@ class AuthService {
       throw new ApiError(401, "User not found or account is inactive");
     }
 
+    if (session.user.toString() !== user._id.toString()) {
+      throw new ApiError(401, "Invalid session");
+    }
+
     const accessToken = tokenService.generateAccessToken(user);
     const newRefreshToken = tokenService.generateRefreshToken(user);
-    const newRefreshTokenHash =
-      tokenService.hashRefreshToken(newRefreshToken);
+    const newRefreshTokenHash = tokenService.hashRefreshToken(newRefreshToken);
 
-    // TODO: Update the session with newRefreshTokenHash once
-    // sessionService.updateRefreshToken() is implemented.
-
-    void newRefreshTokenHash;
+    await sessionService.updateRefreshToken(
+      session._id,
+      newRefreshTokenHash,
+      session.expiresAt,
+    );
 
     return {
       accessToken,
       refreshToken: newRefreshToken,
     };
+  }
+
+  /**
+   * Forgot password.
+   */
+  async forgotPassword(email) {
+    const user = await userModel.findOne({ email });
+
+    // Don't reveal whether the email exists
+    if (!user) {
+      return;
+    }
+
+    // Create reset token
+    const resetToken = await passwordResetTokenService.createToken(user._id);
+
+    // Create reset link
+    const resetLink = `${config.CLIENT_URL}/reset-password?token=${resetToken}`;
+
+    // Send email
+    await emailService.sendPasswordResetEmail(user.email, resetLink);
+  }
+
+  /**
+   * Reset user password.
+   */
+  async resetPassword(token, password) {
+    // Find reset token
+    const passwordResetToken = await passwordResetTokenService.findToken(token);
+
+    if (!passwordResetToken) {
+      throw new ApiError(400, "Invalid or expired reset token");
+    }
+
+    // Check expiration
+    if (passwordResetToken.expiresAt < new Date()) {
+      throw new ApiError(400, "Reset token has expired");
+    }
+
+    // Find user
+    const user = await userModel.findById(passwordResetToken.user);
+
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    // Hash new password
+    user.password = await passwordService.hashPassword(password);
+
+    await user.save();
+
+    // Delete reset token
+    await passwordResetTokenService.deleteToken(user._id);
+
+    // Logout from all devices
+    await sessionService.revokeAllSessions(user._id);
   }
 }
 
