@@ -1,9 +1,7 @@
-import bcrypt from "bcryptjs";
-import userModel from "../models/user.model.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
-import generateToken from "../utils/generateToken.js";
 import cookieOptions from "../utils/cookieOptions.js";
+import authService from "../services/auth.service.js";
 
 /**
  * Register a new user
@@ -12,38 +10,12 @@ import cookieOptions from "../utils/cookieOptions.js";
 */
 // Register a new user
 export const registerUser = asyncHandler(async (req, res) => {
-  const { name, phone, email, password } = req.body;
-
-  const userExists = await userModel.findOne({
-    $or: [{ phone }, { email }],
-  });
-
-  if (userExists) {
-    throw new ApiError(
-      409,
-      "User with this phone number or email already exist",
-    );
-  }
-
-  // Hash password before saving
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  const user = await userModel.create({
-    name,
-    phone,
-    email,
-    password: hashedPassword,
-    role: "user",
-  });
-
-  // generate authentication token
-  const token = generateToken(user);
-
-  res.cookie("token", token, cookieOptions);
+  const { user, accessToken } = await authService.register(req.body);
+  res.cookie("token", accessToken, cookieOptions);
 
   res.status(201).json({
     success: true,
-    message: "User register successfully",
+    message: "User registered successfully",
     user: {
       id: user._id,
       name: user.name,
@@ -56,30 +28,8 @@ export const registerUser = asyncHandler(async (req, res) => {
 
 // Login user
 export const loginUser = asyncHandler(async (req, res) => {
-  const { phone, email, password } = req.body;
-
-  const user = await userModel
-    .findOne({
-      $or: [{ phone }, { email }],
-    })
-    .select("+password");
-
-  // Check if user exists
-  if (!user) {
-    throw new ApiError(401, "Invalid credentials");
-  }
-
-  // Validate password
-  const isPasswordValid = await bcrypt.compare(password, user.password);
-
-  if (!isPasswordValid) {
-    throw new ApiError(401, "Invalid credentials");
-  }
-
-  // generate authentication token
-  const token = generateToken(user);
-
-  res.cookie("token", token, cookieOptions);
+  const { user, accessToken } = await authService.login(req.body);
+  res.cookie("token", accessToken, cookieOptions);
 
   res.status(200).json({
     success: true,

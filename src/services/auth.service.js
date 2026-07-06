@@ -1,6 +1,7 @@
 import userModel from "../models/user.model.js";
 import passwordService from "./password.service.js";
 import tokenService from "./token.service.js";
+import ApiError from "../utils/ApiError.js";
 
 /**
  * Authentication Service
@@ -40,8 +41,31 @@ class AuthService {
   /**
    * Login user.
    */
-  async login() {
-    throw new Error("Not implemented");
+  async login({ email, password }) {
+    // Find user by email
+    const user = await userModel.findOne({ email }).select("+password");
+
+    if (!user) {
+      throw new ApiError(401, "Invalid credentials");
+    }
+
+    // Verify password
+    const isPasswordValid = await passwordService.comparePassword(
+      password,
+      user.password,
+    );
+
+    if (!isPasswordValid) {
+      throw new ApiError(401, "Invalid credentials");
+    }
+
+    // Generate access token
+    const accessToken = tokenService.generateAccessToken(user);
+
+    return {
+      user,
+      accessToken,
+    };
   }
 
   /**
