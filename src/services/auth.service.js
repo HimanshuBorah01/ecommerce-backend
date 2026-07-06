@@ -231,11 +231,52 @@ class AuthService {
 
     // Hash new password
     user.password = await passwordService.hashPassword(password);
-
     await user.save();
 
     // Delete reset token
     await passwordResetTokenService.deleteToken(user._id);
+
+    // Logout from all devices
+    await sessionService.revokeAllSessions(user._id);
+  }
+
+  /**
+   * Change password.
+   */
+  async changePassword(userId, currentPassword, newPassword) {
+    // Find user
+    const user = await userModel.findById(userId).select("+password");
+
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    // Verify current password
+    const isPasswordValid = await passwordService.comparePassword(
+      currentPassword,
+      user.password,
+    );
+
+    if (!isPasswordValid) {
+      throw new ApiError(400, "Current password is incorrect");
+    }
+
+    // Prevent using the same password
+    const isSamePassword = await passwordService.comparePassword(
+      newPassword,
+      user.password,
+    );
+
+    if (isSamePassword) {
+      throw new ApiError(
+        400,
+        "New password must be different from the current password",
+      );
+    }
+
+    // Update password
+    user.password = await passwordService.hashPassword(newPassword);
+    await user.save();
 
     // Logout from all devices
     await sessionService.revokeAllSessions(user._id);

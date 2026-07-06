@@ -62,6 +62,16 @@ const loginValidationRules = [
   validateResult,
 ];
 
+const changePasswordValidationRules = [
+  body("currentPassword")
+    .notEmpty()
+    .withMessage("Current password is required"),
+
+  body("newPassword")
+    .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters long"),
+];
+
 export const validationMiddleware = {
   registerValidationRules,
   loginValidationRules,

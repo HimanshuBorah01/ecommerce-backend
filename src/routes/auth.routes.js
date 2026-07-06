@@ -42,6 +42,23 @@ router.post(
   forgotPassword,
 );
 
+// Reset password
+// POST /api/v1/auth/reset-password
+router.post(
+  "/reset-password",
+  validationMiddleware.resetPasswordValidationRules,
+  resetPassword,
+);
+
+// Change password
+// POST /api/v1/auth/change-password
+router.post(
+  "/change-password",
+  protect,
+  validationMiddleware.changePasswordValidationRules,
+  changePassword,
+);
+
 // Get current authenticated user
 // GET /api/v1/auth/me
 router.get("/me", protect, getCurrentUser);

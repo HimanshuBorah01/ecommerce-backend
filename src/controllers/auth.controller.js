@@ -118,3 +118,31 @@ export const forgotPassword = asyncHandler(async (req, res) => {
       "If an account with that email exists, a password reset link has been sent.",
   });
 });
+
+/**
+ * Reset password.
+ */
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { token, password } = req.body;
+  await authService.resetPassword(token, password);
+
+  return res.status(200).json({
+    success: true,
+    message: "Password reset successfully. Please log in again.",
+  });
+});
+
+/**
+ * Change password.
+ */
+export const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  
+  await authService.changePassword(req.user._id, currentPassword, newPassword);
+
+  return res.status(200).json({
+    success: true,
+    message:
+      "Password changed successfully. Please log in again on all devices.",
+  });
+});
