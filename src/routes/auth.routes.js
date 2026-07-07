@@ -10,6 +10,10 @@ import {
   refreshToken,
   getCurrentUser,
   forgotPassword,
+  resetPassword,
+  changePassword,
+  verifyEmail,
+  resendVerificationEmail,
 } from "../controllers/auth.controller.js";
 const router = express.Router();
 
@@ -57,6 +61,17 @@ router.post(
   protect,
   validationMiddleware.changePasswordValidationRules,
   changePassword,
+);
+
+// Verify email
+// POST /api/v1/auth/verify-email
+router.post("/verify-email", verifyEmail);
+
+
+router.post(
+  "/resend-verification-email",
+  validationMiddleware.forgotPasswordValidationRules,
+  resendVerificationEmail,
 );
 
 // Get current authenticated user

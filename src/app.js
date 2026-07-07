@@ -1,8 +1,11 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import errorMiddleware from "./middleware/error.middleware.js";
+import helmet from "helmet";
 
 const app = express();
+// Security HTTP headers
+app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
 

@@ -8,6 +8,7 @@ import passwordResetTokenService from "./passwordResetToken.service.js";
 import emailService from "./email.service.js";
 import config from "../config/config.js";
 import emailVerificationTokenService from "./emailVerificationToken.service.js";
+import emailVerificationService from "./emailVerification.service.js";
 
 /**
  * Authentication Service
@@ -320,7 +321,28 @@ class AuthService {
     // Delete verification token
     await emailVerificationTokenService.deleteToken(user._id);
   }
+
+  /**
+   * Resend email verification.
+   */
+  async resendVerificationEmail(email) {
+    const user = await userModel.findOne({ email });
+
+    // Don't reveal whether the email exists
+    if (!user) {
+      return;
+    }
+
+    // Already verified
+    if (user.isEmailVerified) {
+      return;
+    }
+    // Send a new verification email
+    await emailVerificationService.sendVerificationEmail(user);
+  }
 }
+
+
 
 const authService = new AuthService();
 

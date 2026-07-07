@@ -137,12 +137,40 @@ export const resetPassword = asyncHandler(async (req, res) => {
  */
 export const changePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
-  
+
   await authService.changePassword(req.user._id, currentPassword, newPassword);
 
   return res.status(200).json({
     success: true,
     message:
       "Password changed successfully. Please log in again on all devices.",
+  });
+});
+
+/**
+ * Verify email.
+ */
+export const verifyEmail = asyncHandler(async (req, res) => {
+  const { token } = req.body;
+
+  await authService.verifyEmail(token);
+
+  return res.status(200).json({
+    success: true,
+    message: "Email verified successfully.",
+  });
+});
+
+/**
+ * Resend verification email.
+ */
+export const resendVerificationEmail = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  await authService.resendVerificationEmail(email);
+
+  return res.status(200).json({
+    success: true,
+    message:
+      "If the email exists and is not verified, a new verification email has been sent.",
   });
 });
