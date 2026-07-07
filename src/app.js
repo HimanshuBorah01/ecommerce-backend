@@ -1,15 +1,10 @@
 import express from "express";
 import cookieParser from "cookie-parser";
-import errorMiddleware from "./middleware/error.middleware.js";
 import helmet from "helmet";
 
-const app = express();
-// Security HTTP headers
-app.use(helmet());
-app.use(express.json());
-app.use(cookieParser());
+import errorMiddleware from "./middleware/error.middleware.js";
+import { apiRateLimiter } from "./middleware/rateLimiter.middleware.js";
 
-//Routes
 import authRoutes from "./routes/auth.routes.js";
 import productRout from "./routes/product.routes.js";
 import cartRouts from "./routes/cart.routes.js";
@@ -17,6 +12,14 @@ import orderRoutes from "./routes/order.routes.js";
 import addressRoutes from "./routes/address.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import wishlistRoutes from "./routes/wishlist.routes.js";
+
+const app = express();
+// Security HTTP headers
+app.use(helmet());
+// General API rate limiter
+app.use("/api", apiRateLimiter);
+app.use(express.json());
+app.use(cookieParser());
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/products", productRout);

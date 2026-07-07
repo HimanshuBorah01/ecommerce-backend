@@ -1,6 +1,7 @@
 import express from "express";
 import { validationMiddleware } from "../middleware/validation.middleware.js";
 import { protect } from "../middleware/auth.middleware.js";
+import { authRateLimiter } from "../middleware/rateLimiter.middleware.js";
 
 import {
   registerUser,
@@ -28,7 +29,12 @@ router.post(
 
 // login user
 // POST /api/v1/auth/login
-router.post("/login", validationMiddleware.loginValidationRules, loginUser);
+router.post(
+  "/login",
+  authRateLimiter,
+  validationMiddleware.loginValidationRules,
+  loginUser,
+);
 
 // Refresh access token
 // POST /api/v1/auth/refresh-token
@@ -42,6 +48,7 @@ router.post("/logout-all", protect, logoutAllDevices);
 
 router.post(
   "/forgot-password",
+  authRateLimiter,
   validationMiddleware.forgotPasswordValidationRules,
   forgotPassword,
 );
@@ -50,6 +57,7 @@ router.post(
 // POST /api/v1/auth/reset-password
 router.post(
   "/reset-password",
+  authRateLimiter,
   validationMiddleware.resetPasswordValidationRules,
   resetPassword,
 );
@@ -70,6 +78,7 @@ router.post("/verify-email", verifyEmail);
 
 router.post(
   "/resend-verification-email",
+  authRateLimiter,
   validationMiddleware.forgotPasswordValidationRules,
   resendVerificationEmail,
 );

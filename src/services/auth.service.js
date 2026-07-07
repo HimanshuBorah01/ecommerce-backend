@@ -9,6 +9,7 @@ import emailService from "./email.service.js";
 import config from "../config/config.js";
 import emailVerificationTokenService from "./emailVerificationToken.service.js";
 import emailVerificationService from "./emailVerification.service.js";
+import loginAttemptService from "./loginAttempt.service.js";
 
 /**
  * Authentication Service
@@ -56,6 +57,18 @@ class AuthService {
   async login(loginData) {
     const { email, phone, password } = loginData;
 
+    const loginIdentifier = email || phone;
+
+    // Check if account is temporarily locked
+    const isLocked = await loginAttemptService.isLocked(loginIdentifier);
+
+    if (isLocked) {
+      throw new ApiError(
+        429,
+        "Too many failed login attempts. Please try again after 15 minutes.",
+      );
+    }
+
     // Find user by email or phone
     const user = await userModel
       .findOne({
@@ -64,6 +77,7 @@ class AuthService {
       .select("+password");
 
     if (!user) {
+      await loginAttemptService.recordFailure(loginIdentifier);
       throw new ApiError(401, "Invalid credentials");
     }
 
@@ -74,12 +88,16 @@ class AuthService {
     );
 
     if (!isPasswordValid) {
+      await loginAttemptService.recordFailure(loginIdentifier);
       throw new ApiError(401, "Invalid credentials");
     }
 
     if (!user.isActive) {
       throw new ApiError(403, "Account is inactive");
     }
+
+    // Clear failed login attempts after successful authentication
+    await loginAttemptService.clearAttempts(loginIdentifier);
 
     // Generate tokens
     const accessToken = tokenService.generateAccessToken(user);
