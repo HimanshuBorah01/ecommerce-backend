@@ -7,6 +7,7 @@ import { AUTH } from "../constants/auth.js";
 import passwordResetTokenService from "./passwordResetToken.service.js";
 import emailService from "./email.service.js";
 import config from "../config/config.js";
+import emailVerificationTokenService from "./emailVerificationToken.service.js";
 
 /**
  * Authentication Service
@@ -280,6 +281,44 @@ class AuthService {
 
     // Logout from all devices
     await sessionService.revokeAllSessions(user._id);
+  }
+
+  /**
+   * Verify user email.
+   */
+  async verifyEmail(token) {
+    // Find verification token
+    const verificationToken =
+      await emailVerificationTokenService.findToken(token);
+
+    if (!verificationToken) {
+      throw new ApiError(400, "Invalid or expired verification token");
+    }
+
+    // Check expiration
+    if (verificationToken.expiresAt < new Date()) {
+      throw new ApiError(400, "Verification token has expired");
+    }
+
+    // Find user
+    const user = await userModel.findById(verificationToken.user);
+
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    // Email already verified
+    if (user.isEmailVerified) {
+      await emailVerificationTokenService.deleteToken(user._id);
+      return;
+    }
+
+    // Mark email as verified
+    user.isEmailVerified = true;
+    await user.save();
+
+    // Delete verification token
+    await emailVerificationTokenService.deleteToken(user._id);
   }
 }
 

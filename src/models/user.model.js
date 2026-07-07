@@ -36,6 +36,14 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "seller"],
       default: "user",
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -46,6 +54,8 @@ const userSchema = new mongoose.Schema(
 
 userSchema.index({ email: 1 });
 userSchema.index({ phone: 1 });
+userSchema.index({ role: 1 });
+userSchema.index({ role: 1, isActive: 1 });
 
 const userModel = mongoose.model("User", userSchema);
 
