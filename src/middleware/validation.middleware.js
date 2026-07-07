@@ -24,6 +24,7 @@ const registerValidationRules = [
 
   body("email")
     .trim()
+    .normalizeEmail()
     .notEmpty()
     .withMessage("Email is required")
     .bail()
@@ -42,22 +43,36 @@ const registerValidationRules = [
     .notEmpty()
     .withMessage("Password is required")
     .bail()
-    .isLength({ min: 6, max: 128 })
-    .withMessage("Password must be between 6 and 128 characters"),
+    .isLength({ min: 8, max: 128 })
+    .withMessage("Password must be between 8 and 128 characters"),
 
   validateResult,
 ];
 
 const loginValidationRules = [
   body("email")
+    .optional({ checkFalsy: true })
     .trim()
-    .notEmpty()
-    .withMessage("Email is required")
-    .bail()
+    .normalizeEmail()
     .isEmail()
     .withMessage("Please enter a valid email address"),
 
-  body("password").notEmpty().withMessage("Password is required"),
+  body("phone")
+    .optional({ checkFalsy: true })
+    .trim()
+    .matches(/^[6-9]\d{9}$/)
+    .withMessage("Please enter a valid Indian mobile number"),
+
+  body().custom((value) => {
+    if (!value.email && !value.phone) {
+      throw new Error("Email or phone number is required");
+    }
+    return true;
+  }),
+
+  body("password")
+    .notEmpty()
+    .withMessage("Password is required"),
 
   validateResult,
 ];
@@ -70,9 +85,12 @@ const changePasswordValidationRules = [
   body("newPassword")
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters long"),
+
+  validateResult,
 ];
 
 export const validationMiddleware = {
   registerValidationRules,
   loginValidationRules,
+  changePasswordValidationRules,
 };
