@@ -3,15 +3,16 @@ import userModel from "../models/user.model.js";
 import config from "../config/config.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
-import { AUTH } from "../constants/auth.js";
 
 // Verify the user is authenticated
 export const protect = asyncHandler(async (req, res, next) => {
-  const token = req.cookies?.[AUTH.JWT_COOKIE_NAME];
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     throw new ApiError(401, "Authentication required");
   }
+
+  const token = authHeader.split(" ")[1];
 
   // verify the token and find id
   const decoded = jwt.verify(token, config.JWT_SECRET);

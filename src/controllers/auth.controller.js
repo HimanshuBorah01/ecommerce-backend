@@ -29,12 +29,12 @@ export const registerUser = asyncHandler(async (req, res) => {
 export const loginUser = asyncHandler(async (req, res) => {
   const { user, accessToken, refreshToken } = await authService.login(req.body);
 
-  res.cookie(AUTH.JWT_COOKIE_NAME, accessToken, cookieOptions);
   res.cookie(AUTH.REFRESH_TOKEN_COOKIE_NAME, refreshToken, cookieOptions);
 
   return res.status(200).json({
     success: true,
     message: "Login successful",
+    accessToken,
     user: {
       id: user._id,
       name: user.name,
@@ -51,7 +51,6 @@ export const logoutUser = asyncHandler(async (req, res) => {
   await authService.logout(req.cookies);
 
   // Clear cookies
-  res.clearCookie(AUTH.JWT_COOKIE_NAME, cookieOptions);
   res.clearCookie(AUTH.REFRESH_TOKEN_COOKIE_NAME, cookieOptions);
 
   return res.status(200).json({
@@ -66,7 +65,6 @@ export const logoutUser = asyncHandler(async (req, res) => {
 export const logoutAllDevices = asyncHandler(async (req, res) => {
   await authService.logoutAllDevices(req.user._id);
 
-  res.clearCookie(AUTH.JWT_COOKIE_NAME, cookieOptions);
   res.clearCookie(AUTH.REFRESH_TOKEN_COOKIE_NAME, cookieOptions);
 
   return res.status(200).json({
@@ -80,12 +78,12 @@ export const refreshToken = asyncHandler(async (req, res) => {
   const { accessToken, refreshToken: newRefreshToken } =
     await authService.refreshToken(req.cookies);
 
-  res.cookie(AUTH.JWT_COOKIE_NAME, accessToken, cookieOptions);
   res.cookie(AUTH.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, cookieOptions);
 
   return res.status(200).json({
     success: true,
     message: "Access token refreshed successfully",
+    accessToken,
   });
 });
 

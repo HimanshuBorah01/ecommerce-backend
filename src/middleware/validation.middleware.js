@@ -43,12 +43,13 @@ const registerValidationRules = [
     .notEmpty()
     .withMessage("Password is required")
     .bail()
-    .isLength({ min: 8, max: 128 })
-    .withMessage("Password must be between 8 and 128 characters"),
+    .isLength({ min: 6, max: 128 })
+    .withMessage("Password must be between 6 and 128 characters"),
 
   validateResult,
 ];
 
+// validate user login before schema validation
 const loginValidationRules = [
   body("email")
     .optional({ checkFalsy: true })
@@ -70,9 +71,7 @@ const loginValidationRules = [
     return true;
   }),
 
-  body("password")
-    .notEmpty()
-    .withMessage("Password is required"),
+  body("password").notEmpty().withMessage("Password is required"),
 
   validateResult,
 ];

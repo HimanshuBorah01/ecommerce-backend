@@ -38,7 +38,7 @@ if (!process.env.NODE_ENV) {
   throw new Error("NODE_ENV is not defined in environment variables.");
 }
 const config = {
-  PORT: process.env.PORT,
+  PORT: Number(process.env.PORT),
   DB_URL: process.env.DB_URL,
   JWT_SECRET: process.env.JWT_SECRET,
 
@@ -49,6 +49,7 @@ const config = {
   JWT_ACCESS_TOKEN_EXPIRES_IN: process.env.JWT_ACCESS_TOKEN_EXPIRES_IN,
   JWT_REFRESH_TOKEN_EXPIRES_IN: process.env.JWT_REFRESH_TOKEN_EXPIRES_IN,
   NODE_ENV: process.env.NODE_ENV,
+  IS_PRODUCTION: process.env.NODE_ENV === "production",
 };
 
 export default config;
