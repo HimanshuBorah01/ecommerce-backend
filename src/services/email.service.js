@@ -15,6 +15,19 @@ class EmailService {
         pass: config.SMTP_PASS,
       },
     });
+    this.verifyConnection();
+  }
+
+  /**
+   * Verify SMTP connection during application startup.
+   */
+  async verifyConnection() {
+    try {
+      await this.transporter.verify();
+      console.log("SMTP server connection verified.");
+    } catch (error) {
+      console.error("SMTP server connection failed:", error.message);
+    }
   }
 
   /**

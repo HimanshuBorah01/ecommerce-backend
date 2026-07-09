@@ -37,6 +37,21 @@ if (!process.env.JWT_REFRESH_TOKEN_EXPIRES_IN) {
 if (!process.env.NODE_ENV) {
   throw new Error("NODE_ENV is not defined in environment variables.");
 }
+if (!process.env.SMTP_HOST) {
+  throw new Error("SMTP_HOST is not defined in environment variables.");
+}
+if (!process.env.SMTP_PORT) {
+  throw new Error("SMTP_PORT is not defined in environment variables.");
+}
+if (!process.env.SMTP_USER) {
+  throw new Error("SMTP_USER is not defined in environment variables.");
+}
+if (!process.env.SMTP_PASS) {
+  throw new Error("SMTP_PASS is not defined in environment variables.");
+}
+if (!process.env.SMTP_FROM) {
+  throw new Error("SMTP_FROM is not defined in environment variables.");
+}
 const config = {
   PORT: Number(process.env.PORT),
   DB_URL: process.env.DB_URL,
@@ -50,6 +65,13 @@ const config = {
   JWT_REFRESH_TOKEN_EXPIRES_IN: process.env.JWT_REFRESH_TOKEN_EXPIRES_IN,
   NODE_ENV: process.env.NODE_ENV,
   IS_PRODUCTION: process.env.NODE_ENV === "production",
+  
+  SMTP_HOST: process.env.SMTP_HOST,
+  SMTP_PORT: Number(process.env.SMTP_PORT),
+  SMTP_SECURE: Number(process.env.SMTP_PORT) === 465,
+  SMTP_USER: process.env.SMTP_USER,
+  SMTP_PASS: process.env.SMTP_PASS,
+  SMTP_FROM: process.env.SMTP_FROM,
 };
 
 export default config;
