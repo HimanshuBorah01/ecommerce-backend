@@ -44,8 +44,12 @@ router.post("/refresh-token", refreshToken);
 // POST /api/v1/auth/logout
 router.post("/logout", protect, logoutUser);
 
+// Logout from all devices
+// POST /api/v1/auth/logout-all
 router.post("/logout-all", protect, logoutAllDevices);
 
+// Forgot password
+// POST /api/v1/auth/forgot-password
 router.post(
   "/forgot-password",
   authRateLimiter,
@@ -75,7 +79,8 @@ router.post(
 // POST /api/v1/auth/verify-email
 router.post("/verify-email", verifyEmail);
 
-
+// Resend verification email
+// POST /api/v1/auth/resend-verification-email
 router.post(
   "/resend-verification-email",
   authRateLimiter,
