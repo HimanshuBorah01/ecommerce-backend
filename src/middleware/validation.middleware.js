@@ -76,14 +76,44 @@ const loginValidationRules = [
   validateResult,
 ];
 
+
 const changePasswordValidationRules = [
   body("currentPassword")
     .notEmpty()
     .withMessage("Current password is required"),
 
   body("newPassword")
-    .isLength({ min: 8 })
-    .withMessage("Password must be at least 8 characters long"),
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters long"),
+
+  validateResult,
+];
+
+const forgotPasswordValidationRules = [
+  body("email")
+    .trim()
+    .normalizeEmail()
+    .notEmpty()
+    .withMessage("Email is required")
+    .bail()
+    .isEmail()
+    .withMessage("Please enter a valid email address"),
+
+  validateResult,
+];
+
+const resetPasswordValidationRules = [
+  body("token")
+    .trim()
+    .notEmpty()
+    .withMessage("Reset token is required"),
+
+  body("newPassword")
+    .notEmpty()
+    .withMessage("New password is required")
+    .bail()
+    .isLength({ min: 6, max: 128 })
+    .withMessage("Password must be between 6 and 128 characters"),
 
   validateResult,
 ];
@@ -92,4 +122,6 @@ export const validationMiddleware = {
   registerValidationRules,
   loginValidationRules,
   changePasswordValidationRules,
+  forgotPasswordValidationRules,
+  resetPasswordValidationRules,
 };

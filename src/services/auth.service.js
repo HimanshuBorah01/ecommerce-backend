@@ -1,12 +1,13 @@
 import userModel from "../models/user.model.js";
+import config from "../config/config.js";
+import ApiError from "../utils/ApiError.js";
+import { AUTH } from "../constants/auth.js";
+
 import passwordService from "./password.service.js";
 import tokenService from "./token.service.js";
 import sessionService from "./session.service.js";
-import ApiError from "../utils/ApiError.js";
-import { AUTH } from "../constants/auth.js";
 import passwordResetTokenService from "./passwordResetToken.service.js";
 import emailService from "./email.service.js";
-import config from "../config/config.js";
 import emailVerificationTokenService from "./emailVerificationToken.service.js";
 import emailVerificationService from "./emailVerification.service.js";
 import loginAttemptService from "./loginAttempt.service.js";
@@ -84,7 +85,7 @@ class AuthService {
     // Verify password
     const isPasswordValid = await passwordService.comparePassword(
       password,
-      user.password,
+      user.password, //hashed password
     );
 
     if (!isPasswordValid) {
@@ -135,7 +136,6 @@ class AuthService {
     }
 
     const refreshTokenHash = tokenService.hashRefreshToken(refreshToken);
-
     const session =
       await sessionService.findSessionByRefreshToken(refreshTokenHash);
 
@@ -146,6 +146,13 @@ class AuthService {
 
     // Revoke the current session.
     await sessionService.revokeSession(session._id);
+  }
+
+  /**
+   * Logout user from all devices.
+   */
+  async logoutAllDevices(userId) {
+    await sessionService.revokeAllSessions(userId);
   }
 
   /**
@@ -359,8 +366,6 @@ class AuthService {
     await emailVerificationService.sendVerificationEmail(user);
   }
 }
-
-
 
 const authService = new AuthService();
 
