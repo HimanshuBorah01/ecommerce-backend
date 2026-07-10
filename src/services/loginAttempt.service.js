@@ -3,7 +3,7 @@ import redisClient from "../config/redis.js";
 class LoginAttemptService {
   constructor() {
     this.MAX_ATTEMPTS = 5;
-    this.LOCK_TIME = 15 * 60; // seconds
+    this.LOCK_TIME = 15 * 60; // 900 seconds
   }
 
   getKey(email) {

@@ -10,6 +10,6 @@ const cookieOptions = {
   sameSite: config.IS_PRODUCTION ? "none" : "lax",
   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   path: "/",
-};s
+};
 
 export default cookieOptions;

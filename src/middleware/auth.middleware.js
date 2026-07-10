@@ -1,6 +1,5 @@
-import jwt from "jsonwebtoken";
 import userModel from "../models/user.model.js";
-import config from "../config/config.js";
+import tokenService from "../services/token.service.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 
@@ -15,7 +14,7 @@ export const protect = asyncHandler(async (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   // verify the token and find id
-  const decoded = jwt.verify(token, config.JWT_SECRET);
+  const decoded = tokenService.verifyAccessToken(token);
   const user = await userModel.findById(decoded.id).select("-password");
 
   if (!user) {
