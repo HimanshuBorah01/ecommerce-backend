@@ -1,5 +1,4 @@
 import ImageKit from "@imagekit/nodejs";
-
 import config from "../config/config.js";
 
 const ImageKiteClient = new ImageKit({
