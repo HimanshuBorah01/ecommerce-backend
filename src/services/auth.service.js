@@ -44,6 +44,9 @@ class AuthService {
       password: hashedPassword,
     });
 
+    // Generate verification token and send verification email
+    await emailVerificationService.sendVerificationEmail(user);
+
     const userResponse = user.toObject();
     delete userResponse.password;
 

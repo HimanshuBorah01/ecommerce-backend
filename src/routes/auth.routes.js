@@ -77,7 +77,11 @@ router.post(
 
 // Verify email
 // POST /api/v1/auth/verify-email
-router.post("/verify-email", verifyEmail);
+router.post(
+  "/verify-email",
+  validationMiddleware.verifyEmailValidationRules,
+  verifyEmail,
+);
 
 // Resend verification email
 // POST /api/v1/auth/resend-verification-email

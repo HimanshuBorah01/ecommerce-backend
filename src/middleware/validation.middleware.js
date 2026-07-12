@@ -123,10 +123,20 @@ const resetPasswordValidationRules = [
   validateResult,
 ];
 
+const verifyEmailValidationRules = [
+  body("token")
+    .trim()
+    .notEmpty()
+    .withMessage("Verification token is required"),
+
+  validateResult,
+];
+
 export const validationMiddleware = {
   registerValidationRules,
   loginValidationRules,
   changePasswordValidationRules,
   forgotPasswordValidationRules,
   resetPasswordValidationRules,
+  verifyEmailValidationRules,
 };

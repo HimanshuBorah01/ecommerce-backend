@@ -99,6 +99,7 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
       email: req.user.email,
       phone: req.user.phone,
       role: req.user.role,
+      isEmailVerified: req.user.isEmailVerified,
     },
   });
 });
@@ -121,8 +122,8 @@ export const forgotPassword = asyncHandler(async (req, res) => {
  * Reset password.
  */
 export const resetPassword = asyncHandler(async (req, res) => {
-  const { token, password } = req.body;
-  await authService.resetPassword(token, password);
+  const { token, newPassword } = req.body;
+  await authService.resetPassword(token, newPassword);
 
   return res.status(200).json({
     success: true,
