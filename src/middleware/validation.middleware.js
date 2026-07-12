@@ -46,6 +46,11 @@ const registerValidationRules = [
     .isLength({ min: 6, max: 128 })
     .withMessage("Password must be between 6 and 128 characters"),
 
+  body("role")
+    .optional()
+    .isIn(["user", "seller"])
+    .withMessage("Role must be either 'user' or 'seller'"),
+
   validateResult,
 ];
 
