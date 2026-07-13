@@ -16,6 +16,18 @@ export const createAddress = asyncHandler(async (req, res) => {
     isDefault,
   } = req.body;
 
+  // Ensure only one default address per user
+  if (isDefault) {
+    await addressModel.updateMany(
+      {
+        user: req.user._id,
+        isDefault: true,
+      },
+      {
+        isDefault: false,
+      },
+    );
+  }
   const address = await addressModel.create({
     user: req.user._id,
     fullName,
@@ -38,9 +50,14 @@ export const createAddress = asyncHandler(async (req, res) => {
 
 // get user address
 export const getMyAddresses = asyncHandler(async (req, res) => {
-  const addresses = await addressModel.find({
-    user: req.user._id,
-  });
+  const addresses = await addressModel
+    .find({
+      user: req.user._id,
+    })
+    .sort({
+      isDefault: -1,
+      createdAt: -1,
+    });
 
   return res.status(200).json({
     success: true,
@@ -101,6 +118,19 @@ export const updateMyAddress = asyncHandler(async (req, res) => {
   if (state) address.state = state;
   if (pinCode) address.pinCode = pinCode;
   if (country) address.country = country;
+  // Ensure only one default address per user
+  if (isDefault === true) {
+    await addressModel.updateMany(
+      {
+        user: req.user._id,
+        isDefault: true,
+        _id: { $ne: address._id },
+      },
+      {
+        isDefault: false,
+      },
+    );
+  }
   if (isDefault !== undefined) address.isDefault = isDefault;
 
   await address.save();
