@@ -123,11 +123,93 @@ const resetPasswordValidationRules = [
   validateResult,
 ];
 
+
 const verifyEmailValidationRules = [
   body("token")
     .trim()
     .notEmpty()
     .withMessage("Verification token is required"),
+
+  validateResult,
+];
+
+const createAddressValidationRules = [
+  body("fullName")
+    .trim()
+    .notEmpty()
+    .withMessage("Full name is required")
+    .bail()
+    .isLength({ min: 2, max: 100 })
+    .withMessage("Full name must be between 2 and 100 characters"),
+
+  body("phone")
+    .trim()
+    .notEmpty()
+    .withMessage("Phone number is required")
+    .bail()
+    .matches(/^[6-9]\d{9}$/)
+    .withMessage("Please enter a valid Indian mobile number"),
+
+  body("addressLine1")
+    .trim()
+    .notEmpty()
+    .withMessage("Address Line 1 is required"),
+
+  body("city")
+    .trim()
+    .notEmpty()
+    .withMessage("City is required"),
+
+  body("state")
+    .trim()
+    .notEmpty()
+    .withMessage("State is required"),
+
+  body("pinCode")
+    .trim()
+    .notEmpty()
+    .withMessage("PIN code is required")
+    .bail()
+    .matches(/^\d{6}$/)
+    .withMessage("PIN code must be a valid 6-digit Indian PIN code"),
+
+  body("country")
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage("Country cannot be empty"),
+
+  body("isDefault")
+    .optional()
+    .isBoolean()
+    .withMessage("isDefault must be true or false"),
+
+  validateResult,
+];
+
+const updateAddressValidationRules = [
+  body("fullName")
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage("Full name must be between 2 and 100 characters"),
+
+  body("phone")
+    .optional()
+    .trim()
+    .matches(/^[6-9]\d{9}$/)
+    .withMessage("Please enter a valid Indian mobile number"),
+
+  body("pinCode")
+    .optional()
+    .trim()
+    .matches(/^\d{6}$/)
+    .withMessage("PIN code must be a valid 6-digit Indian PIN code"),
+
+  body("isDefault")
+    .optional()
+    .isBoolean()
+    .withMessage("isDefault must be true or false"),
 
   validateResult,
 ];
@@ -138,5 +220,7 @@ export const validationMiddleware = {
   changePasswordValidationRules,
   forgotPasswordValidationRules,
   resetPasswordValidationRules,
+  createAddressValidationRules,
+  updateAddressValidationRules,
   verifyEmailValidationRules,
 };

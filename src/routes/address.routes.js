@@ -8,6 +8,7 @@ import {
   deleteMyAddress,
 } from "../controllers/address.controller.js";
 import { protect, authorize } from "../middleware/auth.middleware.js";
+import { validationMiddleware } from "../middleware/validation.middleware.js";
 import { ROLES } from "../constants/roles.js";
 
 const router = express.Router();
@@ -18,6 +19,7 @@ router.post(
   "/",
   protect,
   authorize(ROLES.USER),
+  validationMiddleware.createAddressValidationRules,
   createAddress,
 );
 
@@ -45,11 +47,12 @@ router.put(
   "/:id",
   protect,
   authorize(ROLES.USER),
+  validationMiddleware.updateAddressValidationRules,
   updateMyAddress,
 );
 
 // delete address
-// DELETE /api/v1/addresses/:delete
+// DELETE /api/v1/addresses/:id
 router.delete(
   "/:id",
   protect,
