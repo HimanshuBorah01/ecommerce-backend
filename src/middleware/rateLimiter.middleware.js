@@ -21,7 +21,7 @@ export const apiRateLimiter = rateLimit({
  */
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 115,
+  max: 5,
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,

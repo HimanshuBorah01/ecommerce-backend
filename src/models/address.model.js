@@ -58,6 +58,12 @@ const addressSchema = new mongoose.Schema(
   },
 );
 
+addressSchema.index({ user: 1 });
+addressSchema.index({
+  user: 1,
+  isDefault: 1,
+});
+
 const addressModel = mongoose.model("Address", addressSchema);
 
 export default addressModel;
