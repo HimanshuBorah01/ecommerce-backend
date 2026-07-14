@@ -24,6 +24,21 @@ const cartSchema = new mongoose.Schema(
   },
 );
 
+// Prevent duplicate cart items for the same user and product
+cartSchema.index(
+  {
+    user: 1,
+    product: 1,
+  },
+  {
+    unique: true,
+  },
+);
+
+// Optimize common cart queries
+cartSchema.index({ user: 1 });
+cartSchema.index({ product: 1 });
+
 const cartModel = mongoose.model("Cart", cartSchema);
 
 export default cartModel;
