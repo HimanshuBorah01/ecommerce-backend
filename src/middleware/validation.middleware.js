@@ -187,6 +187,7 @@ const createAddressValidationRules = [
   validateResult,
 ];
 
+
 const updateAddressValidationRules = [
   body("fullName")
     .optional()
@@ -214,6 +215,96 @@ const updateAddressValidationRules = [
   validateResult,
 ];
 
+const createProductValidationRules = [
+  body("name")
+    .trim()
+    .notEmpty()
+    .withMessage("Product name is required")
+    .bail()
+    .isLength({ min: 2, max: 200 })
+    .withMessage("Product name must be between 2 and 200 characters"),
+
+  body("description")
+    .trim()
+    .notEmpty()
+    .withMessage("Product description is required"),
+
+  body("price")
+    .notEmpty()
+    .withMessage("Product price is required")
+    .bail()
+    .isFloat({ min: 0 })
+    .withMessage("Price must be a positive number"),
+
+  body("stock")
+    .notEmpty()
+    .withMessage("Product stock is required")
+    .bail()
+    .isInt({ min: 0 })
+    .withMessage("Stock cannot be negative"),
+
+  body("category")
+    .trim()
+    .notEmpty()
+    .withMessage("Product category is required"),
+
+  validateResult,
+];
+
+const updateProductValidationRules = [
+  body("name")
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 200 })
+    .withMessage("Product name must be between 2 and 200 characters"),
+
+  body("price")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("Price must be a positive number"),
+
+  body("stock")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Stock cannot be negative"),
+
+  validateResult,
+];
+
+const addReviewValidationRules = [
+  body("rating")
+    .notEmpty()
+    .withMessage("Rating is required")
+    .bail()
+    .isInt({ min: 1, max: 5 })
+    .withMessage("Rating must be between 1 and 5"),
+
+  body("comment")
+    .trim()
+    .notEmpty()
+    .withMessage("Review comment is required")
+    .bail()
+    .isLength({ max: 1000 })
+    .withMessage("Review comment cannot exceed 1000 characters"),
+
+  validateResult,
+];
+
+const updateReviewValidationRules = [
+  body("rating")
+    .optional()
+    .isInt({ min: 1, max: 5 })
+    .withMessage("Rating must be between 1 and 5"),
+
+  body("comment")
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage("Review comment cannot exceed 1000 characters"),
+
+  validateResult,
+];
+
 export const validationMiddleware = {
   registerValidationRules,
   loginValidationRules,
@@ -222,5 +313,9 @@ export const validationMiddleware = {
   resetPasswordValidationRules,
   createAddressValidationRules,
   updateAddressValidationRules,
+  createProductValidationRules,
+  updateProductValidationRules,
+  addReviewValidationRules,
+  updateReviewValidationRules,
   verifyEmailValidationRules,
 };
