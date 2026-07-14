@@ -62,8 +62,8 @@ export const updateProduct = asyncHandler(async (req, res) => {
   // updating product text data
   if (name) product.name = name;
   if (description) product.description = description;
-  if (price) product.price = price;
-  if (stock) product.stock = stock;
+  if (price !== undefined) product.price = price;
+  if (stock !== undefined) product.stock = stock;
   if (category) product.category = category;
 
   const files = req.files;
@@ -100,10 +100,12 @@ export const updateProduct = asyncHandler(async (req, res) => {
 export const deleteMyProduct = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const product = await productModel.findOne({
-    _id: id,
-    seller: req.user._id,
-  });
+  const product = await productModel
+    .findOne({
+      _id: id,
+      seller: req.user._id,
+    })
+    .select({ __v: 0 });
 
   if (!product) {
     throw new ApiError(404, "Product not found");
@@ -147,7 +149,8 @@ export const getMyProducts = asyncHandler(async (req, res) => {
     .find({
       seller: req.user._id,
     })
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .select({ __v: 0 });
 
   return res.status(200).json({
     success: true,
@@ -196,19 +199,21 @@ export const getAllProducts = asyncHandler(async (req, res) => {
     }
   }
 
-  const skip = (Number(page) - 1) * Number(limit);
+  const safeLimit = Math.min(Number(limit), 50);
+  const skip = (Number(page) - 1) * safeLimit;
   const totalProducts = await productModel.countDocuments(query);
   const products = await productModel
     .find(query)
     .sort({ createdAt: -1 })
     .skip(skip)
-    .limit(Number(limit));
-  const totalPages = Math.ceil(totalProducts / Number(limit));
+    .limit(safeLimit)
+    .select({ __v: 0 });
+  const totalPages = Math.ceil(totalProducts / safeLimit);
 
   return res.status(200).json({
     success: true,
     page: Number(page),
-    limit: Number(limit),
+    limit: safeLimit,
     totalProducts,
     totalPages,
     count: products.length,
@@ -221,7 +226,8 @@ export const getProductById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const product = await productModel
     .findById(id)
-    .populate("reviews.user", "name"); // find by id
+    .populate("reviews.user", "name")
+    .select({ __v: 0 }); // find by id
 
   if (!product) {
     throw new ApiError(404, "Product not found");
