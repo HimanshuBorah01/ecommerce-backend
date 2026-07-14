@@ -95,7 +95,7 @@ export const updateMyAddress = asyncHandler(async (req, res) => {
   const address = await addressModel.findOne({
     _id: id,
     user: req.user._id,
-  });
+  }).select({ __v: 0 });
 
   if (!address) {
     throw new ApiError(404, "Address not found");
