@@ -14,11 +14,22 @@ import {
   deleteReview,
 } from "../controllers/product.controller.js";
 import { protect, authorize } from "../middleware/auth.middleware.js";
+import { validationMiddleware } from "../middleware/validation.middleware.js";
 import { ROLES } from "../constants/roles.js";
 
 // multer is using for accepting data in  file or buffer format
 const upload = multer({
   storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed."));
+    }
+  },
 });
 
 const router = express.Router();
@@ -30,6 +41,7 @@ router.post(
   "/create",
   protect,
   authorize(ROLES.SELLER),
+  validationMiddleware.createProductValidationRules,
   upload.array("image", 10),
   createProduct,
 );
@@ -40,27 +52,18 @@ router.put(
   "/:id",
   protect,
   authorize(ROLES.SELLER),
+  validationMiddleware.updateProductValidationRules,
   upload.array("image", 10),
   updateProduct,
 );
 
 // delete my product
 // DELETE /api/v1/products/:id
-router.delete(
-  "/:id",
-  protect,
-  authorize(ROLES.SELLER),
-  deleteMyProduct,
-);
+router.delete("/:id", protect, authorize(ROLES.SELLER), deleteMyProduct);
 
 // get my products
 // GET /api/v1/products/my-products
-router.get(
-  "/my-products",
-  protect,
-  authorize(ROLES.SELLER),
-  getMyProducts,
-);
+router.get("/my-products", protect, authorize(ROLES.SELLER), getMyProducts);
 
 // get my product my id
 // GET /api/v1/products/my-products/:id
@@ -89,6 +92,7 @@ router.post(
   "/:id/reviews",
   protect,
   authorize(ROLES.USER),
+  validationMiddleware.addReviewValidationRules,
   addReview,
 );
 
@@ -98,15 +102,11 @@ router.put(
   "/:id/reviews",
   protect,
   authorize(ROLES.USER),
+  validationMiddleware.updateReviewValidationRules,
   updateReview,
 );
 
 // delete review
 // DELETE /api/v1/products/:id/reviews
-router.delete(
-  "/:id/reviews",
-  protect,
-  authorize(ROLES.USER),
-  deleteReview,
-);
+router.delete("/:id/reviews", protect, authorize(ROLES.USER), deleteReview);
 export default router;
