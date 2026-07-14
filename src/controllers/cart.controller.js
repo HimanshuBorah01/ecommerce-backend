@@ -12,6 +12,9 @@ export const addToCart = asyncHandler(async (req, res) => {
   if (!product) {
     throw new ApiError(404, "Product not found");
   }
+  if (product.stock < (quantity || 1)) {
+    throw new ApiError(400, "Requested quantity exceeds available stock");
+  }
 
   // finding existing cart item exist or not
   const existingCartItem = await cartModel.findOne({
@@ -20,7 +23,12 @@ export const addToCart = asyncHandler(async (req, res) => {
   });
 
   if (existingCartItem) {
-    existingCartItem.quantity += quantity || 1;
+    const newQuantity = existingCartItem.quantity + (quantity || 1);
+
+    if (newQuantity > product.stock) {
+      throw new ApiError(400, "Requested quantity exceeds available stock");
+    }
+    existingCartItem.quantity = newQuantity;
     await existingCartItem.save();
 
     return res.status(200).json({
@@ -50,7 +58,7 @@ export const getCart = asyncHandler(async (req, res) => {
     .find({
       user: req.user._id,
     })
-    .populate("product");
+    .populate("product", "name price images stock category");
 
   return res.status(200).json({
     success: true,
@@ -86,7 +94,7 @@ export const updateCartItem = asyncHandler(async (req, res) => {
   const { quantity } = req.body;
 
   if (!quantity || quantity < 1) {
-    throw new ApiError(400, "Quantity must be gater then 0");
+    throw new ApiError(400, "Quantity must be greater than 0");
   }
   const cartItem = await cartModel.findOne({
     _id: id,
@@ -97,12 +105,22 @@ export const updateCartItem = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Cart item not found");
   }
 
+  const product = await productModel.findById(cartItem.product);
+
+  if (!product) {
+    throw new ApiError(404, "Product not found");
+  }
+
+  if (quantity > product.stock) {
+    throw new ApiError(400, "Requested quantity exceeds available stock");
+  }
+
   cartItem.quantity = quantity; //update quantity
   await cartItem.save();
 
   return res.status(200).json({
     success: true,
-    message: "Cart item update successfully",
+    message: "Cart item updated successfully",
     cartItem,
   });
 });
