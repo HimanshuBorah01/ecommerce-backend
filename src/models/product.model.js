@@ -15,11 +15,13 @@ const productSchema = new mongoose.Schema(
     price: {
       type: Number,
       required: [true, "Product price is required"],
+      min: [0, "Price cannot be negative"],
     },
     stock: {
       type: Number,
       required: [true, "Product stock is required"],
       default: 0,
+      min: [0, "Stock cannot be negative"],
     },
     category: {
       type: String,
@@ -69,17 +71,26 @@ const productSchema = new mongoose.Schema(
     averageRating: {
       type: Number,
       default: 0,
+      min: 0,
+      max: 5,
     },
 
     numberOfReviews: {
       type: Number,
       default: 0,
+      min: 0,
     },
   },
   {
     timestamps: true,
   },
 );
+
+
+productSchema.index({ seller: 1 });
+productSchema.index({ category: 1 });
+productSchema.index({ averageRating: -1 });
+productSchema.index({ createdAt: -1 });
 
 const productModel = mongoose.model("Product", productSchema);
 
