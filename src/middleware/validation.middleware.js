@@ -13,7 +13,7 @@ const validateResult = (req, res, next) => {
 };
 
 // validate user registration before schema validation
-const registerValidationRules = [
+export const registerValidationRules = [
   body("name")
     .trim()
     .notEmpty()
@@ -55,7 +55,7 @@ const registerValidationRules = [
 ];
 
 // validate user login before schema validation
-const loginValidationRules = [
+export const loginValidationRules = [
   body("email")
     .optional({ checkFalsy: true })
     .trim()
@@ -81,8 +81,7 @@ const loginValidationRules = [
   validateResult,
 ];
 
-
-const changePasswordValidationRules = [
+export const changePasswordValidationRules = [
   body("currentPassword")
     .notEmpty()
     .withMessage("Current password is required"),
@@ -94,7 +93,7 @@ const changePasswordValidationRules = [
   validateResult,
 ];
 
-const forgotPasswordValidationRules = [
+export const forgotPasswordValidationRules = [
   body("email")
     .trim()
     .normalizeEmail()
@@ -107,11 +106,8 @@ const forgotPasswordValidationRules = [
   validateResult,
 ];
 
-const resetPasswordValidationRules = [
-  body("token")
-    .trim()
-    .notEmpty()
-    .withMessage("Reset token is required"),
+export const resetPasswordValidationRules = [
+  body("token").trim().notEmpty().withMessage("Reset token is required"),
 
   body("newPassword")
     .notEmpty()
@@ -123,17 +119,13 @@ const resetPasswordValidationRules = [
   validateResult,
 ];
 
-
-const verifyEmailValidationRules = [
-  body("token")
-    .trim()
-    .notEmpty()
-    .withMessage("Verification token is required"),
+export const verifyEmailValidationRules = [
+  body("token").trim().notEmpty().withMessage("Verification token is required"),
 
   validateResult,
 ];
 
-const createAddressValidationRules = [
+export const createAddressValidationRules = [
   body("fullName")
     .trim()
     .notEmpty()
@@ -155,15 +147,9 @@ const createAddressValidationRules = [
     .notEmpty()
     .withMessage("Address Line 1 is required"),
 
-  body("city")
-    .trim()
-    .notEmpty()
-    .withMessage("City is required"),
+  body("city").trim().notEmpty().withMessage("City is required"),
 
-  body("state")
-    .trim()
-    .notEmpty()
-    .withMessage("State is required"),
+  body("state").trim().notEmpty().withMessage("State is required"),
 
   body("pinCode")
     .trim()
@@ -187,8 +173,7 @@ const createAddressValidationRules = [
   validateResult,
 ];
 
-
-const updateAddressValidationRules = [
+export const updateAddressValidationRules = [
   body("fullName")
     .optional()
     .trim()
@@ -215,7 +200,7 @@ const updateAddressValidationRules = [
   validateResult,
 ];
 
-const createProductValidationRules = [
+export const createProductValidationRules = [
   body("name")
     .trim()
     .notEmpty()
@@ -251,7 +236,7 @@ const createProductValidationRules = [
   validateResult,
 ];
 
-const updateProductValidationRules = [
+export const updateProductValidationRules = [
   body("name")
     .optional()
     .trim()
@@ -271,7 +256,7 @@ const updateProductValidationRules = [
   validateResult,
 ];
 
-const addReviewValidationRules = [
+export const addReviewValidationRules = [
   body("rating")
     .notEmpty()
     .withMessage("Rating is required")
@@ -290,7 +275,7 @@ const addReviewValidationRules = [
   validateResult,
 ];
 
-const updateReviewValidationRules = [
+export const updateReviewValidationRules = [
   body("rating")
     .optional()
     .isInt({ min: 1, max: 5 })
@@ -305,17 +290,30 @@ const updateReviewValidationRules = [
   validateResult,
 ];
 
-export const validationMiddleware = {
-  registerValidationRules,
-  loginValidationRules,
-  changePasswordValidationRules,
-  forgotPasswordValidationRules,
-  resetPasswordValidationRules,
-  createAddressValidationRules,
-  updateAddressValidationRules,
-  createProductValidationRules,
-  updateProductValidationRules,
-  addReviewValidationRules,
-  updateReviewValidationRules,
-  verifyEmailValidationRules,
-};
+export const addToCartValidationRules = [
+  body("productId")
+    .trim()
+    .notEmpty()
+    .withMessage("Product ID is required")
+    .bail()
+    .isMongoId()
+    .withMessage("Invalid product ID"),
+
+  body("quantity")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Quantity must be greater than 0"),
+
+  validateResult,
+];
+
+export const updateCartValidationRules = [
+  body("quantity")
+    .notEmpty()
+    .withMessage("Quantity is required")
+    .bail()
+    .isInt({ min: 1 })
+    .withMessage("Quantity must be greater than 0"),
+
+  validateResult,
+];
