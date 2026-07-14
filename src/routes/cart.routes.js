@@ -7,7 +7,10 @@ import {
   updateCartItem,
 } from "../controllers/cart.controller.js";
 import { protect, authorize } from "../middleware/auth.middleware.js";
-import { validationMiddleware } from "../middleware/validation.middleware.js";
+import {
+  addToCartValidationRules,
+  updateCartValidationRules,
+} from "../middleware/validation.middleware.js";
 import { ROLES } from "../constants/roles.js";
 
 const router = express.Router();
@@ -18,7 +21,7 @@ router.post(
   "/add",
   protect,
   authorize(ROLES.USER),
-  validationMiddleware.addToCartValidationRules,
+  addToCartValidationRules,
   addToCart,
 );
 
@@ -46,7 +49,7 @@ router.put(
   "/:id",
   protect,
   authorize(ROLES.USER),
-  validationMiddleware.updateCartValidationRules,
+  updateCartValidationRules,
   updateCartItem,
 );
 
