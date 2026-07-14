@@ -34,7 +34,7 @@ export const addWishlist = asyncHandler(async (req, res) => {
   }
 
   // add product to wishlist
-  wishlist.products.push(productId);
+  wishlist.products.addToSet(productId);
   await wishlist.save();
 
   return res.status(200).json({
@@ -51,6 +51,7 @@ export const getWishlist = asyncHandler(async (req, res) => {
     })
     .populate({
       path: "products",
+      select: "name price images stock averageRating numberOfReviews category",
     });
 
   if (!wishlist) {
@@ -93,6 +94,6 @@ export const removeWishlist = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
     success: true,
-    message: "Product remove from wishlist successfully",
+    message: "Product removed from wishlist successfully",
   });
 });
