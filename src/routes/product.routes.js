@@ -41,8 +41,8 @@ router.post(
   "/create",
   protect,
   authorize(ROLES.SELLER),
-  validationMiddleware.createProductValidationRules,
   upload.array("image", 10),
+  validationMiddleware.createProductValidationRules,
   createProduct,
 );
 
@@ -52,8 +52,8 @@ router.put(
   "/:id",
   protect,
   authorize(ROLES.SELLER),
-  validationMiddleware.updateProductValidationRules,
   upload.array("image", 10),
+  validationMiddleware.updateProductValidationRules,
   updateProduct,
 );
 

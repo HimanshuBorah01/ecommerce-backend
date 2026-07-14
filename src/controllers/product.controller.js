@@ -17,31 +17,42 @@ export const createProduct = asyncHandler(async (req, res) => {
   }
 
   const imageUrls = [];
+  const uploadedFileIds = [];
 
-  // image file is uploading in array using multer
-  for (const file of files) {
-    const result = await uploadFile(file.buffer.toString("base64"));
-    imageUrls.push({
-      url: result.url,
-      fileId: result.fileId,
+  try {
+    // image file is uploading in array using multer
+    for (const file of files) {
+      const result = await uploadFile(file.buffer.toString("base64"));
+      uploadedFileIds.push(result.fileId);
+      imageUrls.push({
+        url: result.url,
+        fileId: result.fileId,
+      });
+    }
+
+    const product = await productModel.create({
+      name,
+      description,
+      price,
+      stock,
+      category,
+      images: imageUrls,
+      seller: req.user._id,
     });
+
+    return res.status(201).json({
+      success: true,
+      message: "Product created successfully",
+      product,
+    });
+  } catch (error) {
+    for (const fileId of uploadedFileIds) {
+      try {
+        await deleteFile(fileId);
+      } catch {}
+    }
+    throw error;
   }
-
-  const product = await productModel.create({
-    name,
-    description,
-    price,
-    stock,
-    category,
-    images: imageUrls,
-    seller: req.user._id,
-  });
-
-  return res.status(201).json({
-    success: true,
-    message: "Product created successfully",
-    product,
-  });
 });
 
 // update my product
@@ -128,10 +139,12 @@ export const deleteMyProduct = asyncHandler(async (req, res) => {
 export const getMyProductById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const product = await productModel.findOne({
-    _id: id,
-    seller: req.user._id,
-  });
+  const product = await productModel
+    .findOne({
+      _id: id,
+      seller: req.user._id,
+    })
+    .select({ __v: 0 });
 
   if (!product) {
     throw new ApiError(404, "Product not found");
