@@ -18,6 +18,7 @@ const orderSchema = mongoose.Schema(
         quantity: {
           type: Number,
           required: true,
+          min: [1, "Quantity must be at least 1"],
         },
       },
     ],
@@ -25,6 +26,7 @@ const orderSchema = mongoose.Schema(
     totalAmount: {
       type: Number,
       required: true,
+      min: [0, "Total amount cannot be negative"],
     },
 
     status: {
@@ -83,6 +85,13 @@ const orderSchema = mongoose.Schema(
     timestamps: true,
   },
 );
+
+// Optimize common order queries
+orderSchema.index({ user: 1, createdAt: -1 });
+orderSchema.index({ status: 1 });
+orderSchema.index({ paymentStatus: 1 });
+orderSchema.index({ razorpayOrderId: 1 }, { sparse: true });
+orderSchema.index({ razorpayPaymentId: 1 }, { sparse: true });
 
 const orderModel = mongoose.model("Order", orderSchema);
 
