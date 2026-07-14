@@ -7,6 +7,7 @@ import {
   updateCartItem,
 } from "../controllers/cart.controller.js";
 import { protect, authorize } from "../middleware/auth.middleware.js";
+import { validationMiddleware } from "../middleware/validation.middleware.js";
 import { ROLES } from "../constants/roles.js";
 
 const router = express.Router();
@@ -17,6 +18,7 @@ router.post(
   "/add",
   protect,
   authorize(ROLES.USER),
+  validationMiddleware.addToCartValidationRules,
   addToCart,
 );
 
@@ -30,7 +32,7 @@ router.get(
 );
 
 // remove cart item
-// DELETE /api/v1/cart/delete
+// DELETE /api/v1/cart/:id
 router.delete(
   "/:id",
   protect,
@@ -44,6 +46,7 @@ router.put(
   "/:id",
   protect,
   authorize(ROLES.USER),
+  validationMiddleware.updateCartValidationRules,
   updateCartItem,
 );
 
