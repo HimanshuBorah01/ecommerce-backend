@@ -14,7 +14,12 @@ import {
   deleteReview,
 } from "../controllers/product.controller.js";
 import { protect, authorize } from "../middleware/auth.middleware.js";
-import { validationMiddleware } from "../middleware/validation.middleware.js";
+import {
+  createProductValidationRules,
+  updateProductValidationRules,
+  addReviewValidationRules,
+  updateReviewValidationRules,
+} from "../middleware/validation.middleware.js";
 import { ROLES } from "../constants/roles.js";
 
 // multer is using for accepting data in  file or buffer format
@@ -42,7 +47,7 @@ router.post(
   protect,
   authorize(ROLES.SELLER),
   upload.array("image", 10),
-  validationMiddleware.createProductValidationRules,
+  createProductValidationRules,
   createProduct,
 );
 
@@ -53,7 +58,7 @@ router.put(
   protect,
   authorize(ROLES.SELLER),
   upload.array("image", 10),
-  validationMiddleware.updateProductValidationRules,
+  updateProductValidationRules,
   updateProduct,
 );
 
@@ -92,7 +97,7 @@ router.post(
   "/:id/reviews",
   protect,
   authorize(ROLES.USER),
-  validationMiddleware.addReviewValidationRules,
+  addReviewValidationRules,
   addReview,
 );
 
@@ -102,7 +107,7 @@ router.put(
   "/:id/reviews",
   protect,
   authorize(ROLES.USER),
-  validationMiddleware.updateReviewValidationRules,
+  updateReviewValidationRules,
   updateReview,
 );
 

@@ -1,5 +1,12 @@
 import express from "express";
-import { validationMiddleware } from "../middleware/validation.middleware.js";
+import {
+  registerValidationRules,
+  loginValidationRules,
+  forgotPasswordValidationRules,
+  resetPasswordValidationRules,
+  changePasswordValidationRules,
+  verifyEmailValidationRules,
+} from "../middleware/validation.middleware.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { authRateLimiter } from "../middleware/rateLimiter.middleware.js";
 
@@ -23,7 +30,7 @@ const router = express.Router();
 // POST /api/v1/auth/register
 router.post(
   "/register",
-  validationMiddleware.registerValidationRules,
+  registerValidationRules,
   registerUser,
 );
 
@@ -32,7 +39,7 @@ router.post(
 router.post(
   "/login",
   authRateLimiter,
-  validationMiddleware.loginValidationRules,
+  loginValidationRules,
   loginUser,
 );
 
@@ -53,7 +60,7 @@ router.post("/logout-all", protect, logoutAllDevices);
 router.post(
   "/forgot-password",
   authRateLimiter,
-  validationMiddleware.forgotPasswordValidationRules,
+  forgotPasswordValidationRules,
   forgotPassword,
 );
 
@@ -62,7 +69,7 @@ router.post(
 router.post(
   "/reset-password",
   authRateLimiter,
-  validationMiddleware.resetPasswordValidationRules,
+  resetPasswordValidationRules,
   resetPassword,
 );
 
@@ -71,7 +78,7 @@ router.post(
 router.post(
   "/change-password",
   protect,
-  validationMiddleware.changePasswordValidationRules,
+  changePasswordValidationRules,
   changePassword,
 );
 
@@ -79,7 +86,7 @@ router.post(
 // POST /api/v1/auth/verify-email
 router.post(
   "/verify-email",
-  validationMiddleware.verifyEmailValidationRules,
+  verifyEmailValidationRules,
   verifyEmail,
 );
 
@@ -88,7 +95,7 @@ router.post(
 router.post(
   "/resend-verification-email",
   authRateLimiter,
-  validationMiddleware.forgotPasswordValidationRules,
+  forgotPasswordValidationRules,
   resendVerificationEmail,
 );
 
