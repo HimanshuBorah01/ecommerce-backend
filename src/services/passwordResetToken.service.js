@@ -34,11 +34,13 @@ class PasswordResetTokenService {
       user: userId,
     });
 
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
     // Save new token
     await PasswordResetToken.create({
       user: userId,
       tokenHash,
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+      expiresAt,
     });
 
     return token;
@@ -52,6 +54,7 @@ class PasswordResetTokenService {
 
     return PasswordResetToken.findOne({
       tokenHash,
+      expiresAt: { $gt: new Date() },
     });
   }
 
