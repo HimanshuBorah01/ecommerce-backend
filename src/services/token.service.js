@@ -15,7 +15,7 @@ class TokenService {
   generateAccessToken(user) {
     return jwt.sign(
       {
-        id: user._id,
+        id: user._id.toString(),
         role: user.role,
       },
       config.JWT_SECRET,
@@ -31,7 +31,7 @@ class TokenService {
   verifyAccessToken(accessToken) {
     try {
       return jwt.verify(accessToken, config.JWT_SECRET);
-    } catch {
+    } catch (error) {
       throw new ApiError(401, "Invalid or expired access token");
     }
   }
@@ -42,7 +42,7 @@ class TokenService {
   verifyRefreshToken(refreshToken) {
     try {
       return jwt.verify(refreshToken, config.JWT_SECRET);
-    } catch {
+    } catch (error) {
       throw new ApiError(401, "Invalid or expired refresh token");
     }
   }
@@ -53,7 +53,7 @@ class TokenService {
   generateRefreshToken(user) {
     return jwt.sign(
       {
-        id: user._id,
+        id: user._id.toString(),
       },
       config.JWT_SECRET,
       {
