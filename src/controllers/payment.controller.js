@@ -24,6 +24,10 @@ import ApiError from "../utils/ApiError.js";
 export const createRazorpayOrder = asyncHandler(async (req, res) => {
   const { amount } = req.body;
 
+  if (!amount || Number(amount) <= 0) {
+    throw new ApiError(400, "Valid payment amount is required");
+  }
+
   const options = {
     amount: amount * 100,
     currency: "INR",
@@ -43,6 +47,14 @@ export const verifyPayment = asyncHandler(async (req, res) => {
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
     req.body;
 
+  if (
+    !razorpay_order_id ||
+    !razorpay_payment_id ||
+    !razorpay_signature
+  ) {
+    throw new ApiError(400, "Missing payment verification details");
+  }
+
   // generate payment signature
   const generatedSignature = crypto
     .createHmac("sha256", config.RAZORPAY_KEY_SECRET)
@@ -61,6 +73,18 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Order not found");
   }
 
+  if (order.paymentStatus === "paid") {
+    return res.status(200).json({
+      success: true,
+      message: "Payment already verified",
+      order,
+    });
+  }
+
+  if (order.paymentStatus !== "pending") {
+    throw new ApiError(400, "Order is not awaiting payment");
+  }
+
   order.paymentStatus = "paid";
   order.status = "confirmed";
   order.razorpayPaymentId = razorpay_payment_id;
@@ -75,7 +99,7 @@ export const verifyPayment = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
     success: true,
-    message: "Payment verified",
+    message: "Payment verified successfully",
     order,
   });
 });
