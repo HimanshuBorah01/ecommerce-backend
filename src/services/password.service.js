@@ -1,5 +1,7 @@
 import bcrypt from "bcrypt";
 
+const SALT_ROUNDS = 10;
+
 /**
  * Password Service
  *
@@ -10,7 +12,7 @@ class PasswordService {
    * Hash a plain text password.
    */
   async hashPassword(password) {
-    return bcrypt.hash(password, 10);
+    return bcrypt.hash(password, SALT_ROUNDS);
   }
 
   /**
