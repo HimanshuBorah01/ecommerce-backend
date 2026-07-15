@@ -33,14 +33,15 @@ class LoginAttemptService {
       await redisClient.set(lockKey, "1", {
         EX: this.LOCK_TIME,
       });
+      await redisClient.del(attemptsKey);
     }
   }
 
   async clearAttempts(email) {
-    await redisClient.del(
-      this.getKey(email),
-      this.getLockKey(email),
-    );
+    await Promise.all([
+      redisClient.del(this.getKey(email)),
+      redisClient.del(this.getLockKey(email)),
+    ]);
   }
 }
 
