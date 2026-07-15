@@ -34,12 +34,16 @@ class EmailService {
    * Send an email.
    */
   async sendEmail({ to, subject, html }) {
-    return this.transporter.sendMail({
-      from: config.SMTP_FROM,
-      to,
-      subject,
-      html,
-    });
+    try {
+      return await this.transporter.sendMail({
+        from: config.SMTP_FROM,
+        to,
+        subject,
+        html,
+      });
+    } catch (error) {
+      throw new Error("Failed to send email", { cause: error });
+    }
   }
 
   /**
