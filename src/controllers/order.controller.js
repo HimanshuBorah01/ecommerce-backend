@@ -38,12 +38,26 @@ export const createOrder = asyncHandler(async (req, res) => {
   let totalAmount = 0;
   // iterate cartItems into items array
   for (const item of cartItems) {
+    if (!item.product) {
+      throw new ApiError(404, "Product not found");
+    }
+    if (item.product.stock < item.quantity) {
+      throw new ApiError(
+        400,
+        `Insufficient stock for ${item.product.name}`,
+      );
+    }
     items.push({
       product: item.product._id,
       quantity: item.quantity,
     });
-
     totalAmount += item.product.price * item.quantity; // calculate total amount
+  }
+
+  // Deduct stock for each purchased product
+  for (const item of cartItems) {
+    item.product.stock -= item.quantity;
+    await item.product.save();
   }
 
   // created the order
@@ -90,7 +104,7 @@ export const getMyOrder = asyncHandler(async (req, res) => {
     .find({
       user: req.user._id,
     })
-    .populate("items.product");
+    .populate("items.product", "name price images category seller");
 
   return res.status(200).json({
     success: true,
@@ -108,7 +122,7 @@ export const getMyOrderById = asyncHandler(async (req, res) => {
       _id: id,
       user: req.user._id,
     })
-    .populate("items.product");
+    .populate("items.product", "name price images category seller");
 
   if (!order) {
     throw new ApiError(404, "Order not found");
@@ -218,7 +232,7 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
     success: true,
-    message: "Order status update successfully",
+    message: "Order status updated successfully",
     order,
   });
 });
