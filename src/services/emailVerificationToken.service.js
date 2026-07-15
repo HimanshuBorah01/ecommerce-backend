@@ -34,11 +34,14 @@ class EmailVerificationTokenService {
       user: userId,
     });
 
+    // Extract expiration time into a constant
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
     // Save new token
     await EmailVerificationToken.create({
       user: userId,
       tokenHash,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      expiresAt,
     });
 
     return token;
@@ -52,6 +55,9 @@ class EmailVerificationTokenService {
 
     return EmailVerificationToken.findOne({
       tokenHash,
+      expiresAt: {
+        $gt: new Date(),
+      },
     });
   }
 
