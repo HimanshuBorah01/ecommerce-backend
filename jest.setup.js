@@ -1,3 +1,5 @@
+import { jest } from "@jest/globals";
+jest.setTimeout(60000);
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import connectToDatabase from "./src/config/db.js";

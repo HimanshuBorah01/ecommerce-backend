@@ -22,7 +22,17 @@ class AuthService {
    * Register a new user.
    */
   async register(userData) {
-    const { name, email, phone, password } = userData;
+    const { name, email, phone, password, confirmPassword } = userData;
+
+    // Validate password confirmation
+    if (password !== confirmPassword) {
+      throw new ApiError(400, "Passwords do not match");
+    }
+
+    // Validate minimum password length
+    if (password.length < 6) {
+      throw new ApiError(400, "Password must be at least 6 characters long");
+    }
 
     // Check if user already exists
     const existingUser = await userModel.findOne({
