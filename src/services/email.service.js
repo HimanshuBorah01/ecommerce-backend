@@ -15,7 +15,9 @@ class EmailService {
         pass: config.SMTP_PASS,
       },
     });
-    this.verifyConnection();
+    if (process.env.NODE_ENV !== "test") {
+      this.verifyConnection();
+    }
   }
 
   /**
