@@ -41,7 +41,7 @@ export const createAddress = asyncHandler(async (req, res) => {
     isDefault,
   });
 
-  return res.status(201).json({
+  return res.status(200).json({
     success: true,
     message: "Address created successfully",
     address,
@@ -92,10 +92,12 @@ export const getMyAddressById = asyncHandler(async (req, res) => {
 export const updateMyAddress = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const address = await addressModel.findOne({
-    _id: id,
-    user: req.user._id,
-  }).select({ __v: 0 });
+  const address = await addressModel
+    .findOne({
+      _id: id,
+      user: req.user._id,
+    })
+    .select({ __v: 0 });
 
   if (!address) {
     throw new ApiError(404, "Address not found");

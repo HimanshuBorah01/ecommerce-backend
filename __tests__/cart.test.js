@@ -2,35 +2,29 @@ import request from "supertest";
 import app from "../src/app.js";
 import userModel from "../src/models/user.model.js";
 import passwordService from "../src/services/password.service.js";
+import cartModel from "../src/models/cart.model.js";
 import productModel from "../src/models/product.model.js";
+
 // cart.test.js
 // Integration tests for the cart endpoints.
 // Uses in-file helpers (createUser, loginUser, createProduct) to keep tests isolated and deterministic.
-// Randomized emails/phones are used to avoid unique index collisions in the test DB.
 
-
-const makeRandomEmail = () =>
-  `user-${Date.now()}-${Math.floor(Math.random() * 10000)}@example.com`;
-const makeRandomPhone = () =>
-  `9${Math.floor(100000000 + Math.random() * 900000000)}`;
+const makeRandomEmail = () => `user-${Date.now()}-${Math.floor(Math.random() * 10000)}@example.com`;
+const makeRandomPhone = () => `9${Math.floor(100000000 + Math.random() * 900000000)}`;
 
 // Helper: createUser({ role }) - inserts a user in DB and returns { user, email, password }
-
 async function createUser({ role = "user" } = {}) {
   const password = "Password@123";
-  const user = await userModel.create({
+  return userModel.create({
     name: "Test User",
     email: makeRandomEmail(),
     phone: makeRandomPhone(),
     password: await passwordService.hashPassword(password),
     role,
-  });
-
-  return { user, email: user.email, password };
+  }).then((user) => ({ user, email: user.email, password }));
 }
-// Helper: loginUser(email, password) - performs /auth/login and returns accessToken (asserts status 200)
 
-
+// Helper: loginUser(email, password) - performs /auth/login and returns accessToken
 async function loginUser(email, password) {
   const response = await request(app)
     .post("/api/v1/auth/login")
@@ -38,128 +32,117 @@ async function loginUser(email, password) {
 
   expect(response.status).toBe(200);
   expect(response.body.accessToken).toBeDefined();
-
   return response.body.accessToken;
-// Helper: createProduct(...) - creates a product document used in tests, accepts overrides and returns the product model instance
+}
 
-
-async function createProduct({ sellerId, stock = 10, overrides = {} } = {}) {
+// Helper: createProduct(...) - creates a product document for tests
+async function createProduct({ sellerId, overrides = {} } = {}) {
   return productModel.create({
     name: "Test Product",
     description: "A product for cart tests",
     price: 100,
-    stock,
+    stock: 10,
     category: "Electronics",
-    images: [{ url: "https://example.com/image.png", fileId: "fake-file-id" }],
+    images: [{ url: "https://example.com/product.png", fileId: "product-file-id" }],
     seller: sellerId,
     ...overrides,
   });
 }
 
-// Test suite: verifies API behavior and basic happy/error flows for this resource
-
+// Test suite: verifies API behavior and basic happy/error flows
 describe("Cart API", () => {
-  test("should add a product to the cart", async () => {
+  test("should add a product to cart", async () => {
     const seller = await createUser({ role: "seller" });
     const buyer = await createUser();
     const accessToken = await loginUser(buyer.email, buyer.password);
-
     const product = await createProduct({ sellerId: seller.user._id });
 
     const response = await request(app)
-      .post("/api/v1/cart/add")
-      .set("Authorization", `Bearer $accessToken`)
-      .send({ productId: product._id.toString(), quantity: 2 });
+      .post("/api/v1/cart")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ productId: product._id.toString(), quantity: 1 });
 
-    expect(response.status).toBe(201);
+    expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
-    expect(response.body.cart).toBeDefined();
-    expect(response.body.cart.quantity).toBe(2);
-    expect(response.body.cart.product).toBe(product._id.toString());
+    expect(response.body.cart.items.length).toBe(1);
   });
 
-  test("should not add a product with quantity greater than stock", async () => {
-    const seller = await createUser({ role: "seller" });
-    const buyer = await createUser();
-    const accessToken = await loginUser(buyer.email, buyer.password);
-    const product = await createProduct({
-      sellerId: seller.user._id,
-      stock: 5,
-    });
-
-    const response = await request(app)
-      .post("/api/v1/cart/add")
-      .set("Authorization", `Bearer $accessToken`)
-      .send({ productId: product._id.toString(), quantity: 10 });
-
-    expect(response.status).toBe(400);
-    expect(response.body.success).toBe(false);
-  });
-
-  test("should get the cart items for the authenticated user", async () => {
+  test("should retrieve user's cart", async () => {
     const seller = await createUser({ role: "seller" });
     const buyer = await createUser();
     const accessToken = await loginUser(buyer.email, buyer.password);
     const product = await createProduct({ sellerId: seller.user._id });
 
     await request(app)
-      .post("/api/v1/cart/add")
-      .set("Authorization", `Bearer $accessToken`)
-      .send({ productId: product._id.toString(), quantity: 1 });
+      .post("/api/v1/cart")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ productId: product._id.toString(), quantity: 2 });
 
-    const getResponse = await request(app)
+    const response = await request(app)
       .get("/api/v1/cart")
-      .set("Authorization", `Bearer $accessToken`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({});
 
-    expect(getResponse.status).toBe(200);
-    expect(getResponse.body.success).toBe(true);
-    expect(getResponse.body.count).toBe(1);
-    expect(getResponse.body.cartItems[0].product._id).toBe(
-      product._id.toString(),
-    );
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.cart.items.length).toBe(1);
+    expect(response.body.cart.items[0].quantity).toBe(2);
   });
 
-  test("should update the cart item quantity", async () => {
+  test("should update cart item quantity", async () => {
     const seller = await createUser({ role: "seller" });
     const buyer = await createUser();
     const accessToken = await loginUser(buyer.email, buyer.password);
     const product = await createProduct({ sellerId: seller.user._id });
 
-    const addResponse = await request(app)
-      .post("/api/v1/cart/add")
-      .set("Authorization", `Bearer $accessToken`)
+    await request(app)
+      .post("/api/v1/cart")
+      .set("Authorization", `Bearer ${accessToken}`)
       .send({ productId: product._id.toString(), quantity: 1 });
 
-    const cartItemId = addResponse.body.cart._id;
+    const response = await request(app)
+      .put("/api/v1/cart")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ productId: product._id.toString(), quantity: 5 });
 
-    const updateResponse = await request(app)
-      .put(`/api/v1/cart/${cartItemId}`)
-      .set("Authorization", `Bearer $accessToken`)
-      .send({ quantity: 5 });
-
-    expect(updateResponse.status).toBe(200);
-    expect(updateResponse.body.success).toBe(true);
-    expect(updateResponse.body.cartItem.quantity).toBe(5);
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.cart.items[0].quantity).toBe(5);
   });
 
-  test("should remove the cart item", async () => {
+  test("should remove item from cart", async () => {
     const seller = await createUser({ role: "seller" });
     const buyer = await createUser();
     const accessToken = await loginUser(buyer.email, buyer.password);
     const product = await createProduct({ sellerId: seller.user._id });
 
-    const addResponse = await request(app)
-      .post("/api/v1/cart/add")
-      .set("Authorization", `Bearer $accessToken`)
+    await request(app)
+      .post("/api/v1/cart")
+      .set("Authorization", `Bearer ${accessToken}`)
       .send({ productId: product._id.toString(), quantity: 1 });
 
-    const cartItemId = addResponse.body.cart._id;
-    const deleteResponse = await request(app)
-      .delete(`/api/v1/cart/${cartItemId}`)
-      .set("Authorization", `Bearer $accessToken`)
+    const response = await request(app)
+      .delete(`/api/v1/cart/${product._id.toString()}`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({});
 
-    expect(deleteResponse.status).toBe(200);
-    expect(deleteResponse.body.success).toBe(true);
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.cart.items.length).toBe(0);
+  });
+
+  test("should fail to add product exceeding stock limit", async () => {
+    const seller = await createUser({ role: "seller" });
+    const buyer = await createUser();
+    const accessToken = await loginUser(buyer.email, buyer.password);
+    const product = await createProduct({ sellerId: seller.user._id, overrides: { stock: 3 } });
+
+    const response = await request(app)
+      .post("/api/v1/cart")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ productId: product._id.toString(), quantity: 10 });
+
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
   });
 });
-}

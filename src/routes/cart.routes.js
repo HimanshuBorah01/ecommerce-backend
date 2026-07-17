@@ -14,43 +14,35 @@ import {
 import { ROLES } from "../constants/roles.js";
 
 const router = express.Router();
-
-// add to cart
-// POST /api/v1/cart/add
-router.post(
-  "/add",
+const addToCartMiddlewares = [
   protect,
   authorize(ROLES.USER),
   addToCartValidationRules,
   addToCart,
-);
-
-// get cart item
-// GET /api/v1/cart
-router.get(
-  "/",
-  protect,
-  authorize(ROLES.USER),
-  getCart,
-);
-
-// remove cart item
-// DELETE /api/v1/cart/:id
-router.delete(
-  "/:id",
-  protect,
-  authorize(ROLES.USER),
-  removeCartItem,
-);
-
-// update cart quantity
-// PUT /api/v1/cart/:id
-router.put(
-  "/:id",
+];
+const updateCartMiddlewares = [
   protect,
   authorize(ROLES.USER),
   updateCartValidationRules,
   updateCartItem,
-);
+];
+
+// add to cart
+// POST /api/v1/cart/add
+router.post("/add", addToCartMiddlewares);
+router.post("/", addToCartMiddlewares);
+
+// get cart item
+// GET /api/v1/cart
+router.get("/", protect, authorize(ROLES.USER), getCart);
+
+// remove cart item
+// DELETE /api/v1/cart/:id
+router.delete("/:id", protect, authorize(ROLES.USER), removeCartItem);
+
+// update cart quantity
+// PUT /api/v1/cart/:id
+router.put("/", updateCartMiddlewares);
+router.put("/:id", updateCartMiddlewares);
 
 export default router;

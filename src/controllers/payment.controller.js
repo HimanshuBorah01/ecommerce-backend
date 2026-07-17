@@ -22,7 +22,42 @@ import ApiError from "../utils/ApiError.js";
 // -> verifyPayment()
 // create payment order
 export const createRazorpayOrder = asyncHandler(async (req, res) => {
-  const { amount } = req.body;
+  const { amount, orderId } = req.body;
+
+  if (orderId) {
+    const order = await orderModel.findOne({
+      _id: orderId,
+      user: req.user._id,
+    });
+
+    if (!order) {
+      throw new ApiError(404, "Order not found");
+    }
+
+    if (!order.razorpayOrderId) {
+      const razorpayOrder = await razorpay.orders.create({
+        amount: order.totalAmount * 100,
+        currency: "INR",
+        receipt: order._id.toString(),
+      });
+
+      order.razorpayOrderId = razorpayOrder.id;
+      await order.save();
+
+      return res.status(200).json({
+        success: true,
+        razorpayOrderId: razorpayOrder.id,
+        razorpayOrder,
+        order,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      razorpayOrderId: order.razorpayOrderId,
+      order,
+    });
+  }
 
   if (!amount || Number(amount) <= 0) {
     throw new ApiError(400, "Valid payment amount is required");
@@ -44,14 +79,14 @@ export const createRazorpayOrder = asyncHandler(async (req, res) => {
 
 // verify payment order
 export const verifyPayment = asyncHandler(async (req, res) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-    req.body;
+  const razorpay_order_id =
+    req.body.razorpay_order_id || req.body.razorpayOrderId;
+  const razorpay_payment_id =
+    req.body.razorpay_payment_id || req.body.razorpayPaymentId;
+  const razorpay_signature =
+    req.body.razorpay_signature || req.body.razorpaySignature;
 
-  if (
-    !razorpay_order_id ||
-    !razorpay_payment_id ||
-    !razorpay_signature
-  ) {
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
     throw new ApiError(400, "Missing payment verification details");
   }
 

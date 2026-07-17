@@ -28,24 +28,16 @@ const router = express.Router();
 // User Routes for registration, login, logout
 // register new user or create account
 // POST /api/v1/auth/register
-router.post(
-  "/register",
-  registerValidationRules,
-  registerUser,
-);
+router.post("/register", registerValidationRules, registerUser);
 
 // login user
 // POST /api/v1/auth/login
-router.post(
-  "/login",
-  authRateLimiter,
-  loginValidationRules,
-  loginUser,
-);
+router.post("/login", authRateLimiter, loginValidationRules, loginUser);
 
 // Refresh access token
 // POST /api/v1/auth/refresh-token
 router.post("/refresh-token", refreshToken);
+router.post("/refresh", refreshToken);
 
 // logout user
 // POST /api/v1/auth/logout
@@ -84,11 +76,7 @@ router.post(
 
 // Verify email
 // POST /api/v1/auth/verify-email
-router.post(
-  "/verify-email",
-  verifyEmailValidationRules,
-  verifyEmail,
-);
+router.post("/verify-email", verifyEmailValidationRules, verifyEmail);
 
 // Resend verification email
 // POST /api/v1/auth/resend-verification-email

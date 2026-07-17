@@ -10,6 +10,7 @@ import {
 import { protect, authorize } from "../middleware/auth.middleware.js";
 import {
   createAddressValidationRules,
+  normalizeAddressPayload,
   updateAddressValidationRules,
 } from "../middleware/validation.middleware.js";
 import { ROLES } from "../constants/roles.js";
@@ -22,27 +23,18 @@ router.post(
   "/",
   protect,
   authorize(ROLES.USER),
+  normalizeAddressPayload,
   createAddressValidationRules,
   createAddress,
 );
 
 // get user address
 // GET /api/v1/addresses
-router.get(
-  "/",
-  protect,
-  authorize(ROLES.USER),
-  getMyAddresses,
-);
+router.get("/", protect, authorize(ROLES.USER), getMyAddresses);
 
 // get user address by id
 // GET /api/v1/addresses/:id
-router.get(
-  "/:id",
-  protect,
-  authorize(ROLES.USER),
-  getMyAddressById,
-);
+router.get("/:id", protect, authorize(ROLES.USER), getMyAddressById);
 
 // update address
 // PUT /api/v1/addresses/:id
@@ -50,17 +42,13 @@ router.put(
   "/:id",
   protect,
   authorize(ROLES.USER),
+  normalizeAddressPayload,
   updateAddressValidationRules,
   updateMyAddress,
 );
 
 // delete address
 // DELETE /api/v1/addresses/:id
-router.delete(
-  "/:id",
-  protect,
-  authorize(ROLES.USER),
-  deleteMyAddress,
-);
+router.delete("/:id", protect, authorize(ROLES.USER), deleteMyAddress);
 
 export default router;

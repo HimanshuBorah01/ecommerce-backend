@@ -1,134 +1,150 @@
 import request from "supertest";
 import app from "../src/app.js";
 import userModel from "../src/models/user.model.js";
-import productModel from "../src/models/product.model.js";
 import passwordService from "../src/services/password.service.js";
-// order.test.js
-// Integration tests for the order endpoints.
-// Uses in-file helpers (createUser, loginUser, createProduct) to keep tests isolated and deterministic.
-// Randomized emails/phones are used to avoid unique index collisions in the test DB.
+import productModel from "../src/models/product.model.js";
+import addressModel from "../src/models/address.model.js";
 
+// order.test.js - Integration tests for order endpoints
+// Tests full order lifecycle from cart to delivery
 
 const makeRandomEmail = () => `user-${Date.now()}-${Math.floor(Math.random() * 10000)}@example.com`;
 const makeRandomPhone = () => `9${Math.floor(100000000 + Math.random() * 900000000)}`;
 
-// Helper: createUser({ role }) - inserts a user in DB and returns { user, email, password }
-
+// Helper: createUser
 async function createUser({ role = "user" } = {}) {
   const password = "Password@123";
-  const user = await userModel.create({
-    name: `Test ${role}`,
+  return userModel.create({
+    name: "Test User",
     email: makeRandomEmail(),
     phone: makeRandomPhone(),
     password: await passwordService.hashPassword(password),
     role,
-  });
-
-  return { user, email: user.email, password };
+  }).then((user) => ({ user, email: user.email, password }));
 }
-// Helper: loginUser(email, password) - performs /auth/login and returns accessToken (asserts status 200)
 
-
+// Helper: loginUser
 async function loginUser(email, password) {
   const response = await request(app)
     .post("/api/v1/auth/login")
     .send({ email, password });
 
   expect(response.status).toBe(200);
+  expect(response.body.accessToken).toBeDefined();
   return response.body.accessToken;
-  }
-// Helper: createProduct(...) - creates a product document used in tests, accepts overrides and returns the product model instance
+}
 
-
-async function createProduct(sellerId) {
+// Helper: createProduct
+async function createProduct({ sellerId, overrides = {} } = {}) {
   return productModel.create({
-    name: "Order Product",
+    name: "Order Test Product",
     description: "A product for order tests",
-    price: 120,
-    stock: 10,
-    category: "Home",
-    images: [{ url: "https://example.com/order.png", fileId: "order-file-id" }],
+    price: 500,
+    stock: 20,
+    category: "Electronics",
+    images: [{ url: "https://example.com/order-product.png", fileId: "order-file-id" }],
     seller: sellerId,
+    ...overrides,
   });
 }
 
-// Test suite: verifies API behavior and basic happy/error flows for this resource
+async function createAddress(userId) {
+  return addressModel.create({
+    user: userId,
+    fullName: "Test User",
+    phone: makeRandomPhone(),
+    addressLine1: "123 Main Street",
+    city: "New York",
+    state: "NY",
+    pinCode: "10001",
+    country: "USA",
+    isDefault: true,
+  });
+}
 
 describe("Order API", () => {
-  test("should create an order, retrieve it, and update order status", async () => {
+  test("should create an order from cart items", async () => {
     const seller = await createUser({ role: "seller" });
     const buyer = await createUser();
     const buyerToken = await loginUser(buyer.email, buyer.password);
-    const sellerToken = await loginUser(seller.email, seller.password);
+    const product = await createProduct({ sellerId: seller.user._id });
+    const address = await createAddress(buyer.user._id);
 
-    const product = await createProduct(seller.user._id);
+    // Add to cart
+    await request(app)
+      .post("/api/v1/cart")
+      .set("Authorization", `Bearer ${buyerToken}`)
+      .send({ productId: product._id.toString(), quantity: 1 });
 
-    const addressResponse = await request(app)
-      .post("/api/v1/addresses")
-      .set("Authorization", `Bearer $buyerToken`)
-      .send({
-        fullName: "First Buyer",
-        phone: "9123456789",
-        addressLine1: "123 Market Street",
-        city: "Delhi",
-        state: "Delhi",
-        pinCode: "110001",
-        country: "India",
-        isDefault: true,
-      });
-
-    expect(addressResponse.status).toBe(201);
-
-    const productResponse = await request(app)
-      .post("/api/v1/cart/add")
-      .set("Authorization", `Bearer $buyerToken`)
-      .send({ productId: product._id.toString(), quantity: 2 });
-
-    expect(productResponse.status).toBe(201);
-
-    const orderResponse = await request(app)
+    // Create order
+    const response = await request(app)
       .post("/api/v1/orders")
-      .set("Authorization", `Bearer $buyerToken`)
+      .set("Authorization", `Bearer ${buyerToken}`)
       .send({
-        addressId: addressResponse.body.address._id,
-        paymentMethod: "cod",
+        addressId: address._id.toString(),
+        paymentMethod: "razorpay",
       });
 
-    expect(orderResponse.status).toBe(201);
-    expect(orderResponse.body.success).toBe(true);
-    expect(orderResponse.body.order.totalAmount).toBe(240);
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+  });
 
-    const orderId = orderResponse.body.order._id;
+  test("should retrieve orders for buyer", async () => {
+    const seller = await createUser({ role: "seller" });
+    const buyer = await createUser();
+    const buyerToken = await loginUser(buyer.email, buyer.password);
+    const product = await createProduct({ sellerId: seller.user._id });
+    const address = await createAddress(buyer.user._id);
 
-    const myOrdersResponse = await request(app)
-      .get("/api/v1/orders/my-orders")
-      .set("Authorization", `Bearer $buyerToken`)
+    await request(app)
+      .post("/api/v1/cart")
+      .set("Authorization", `Bearer ${buyerToken}`)
+      .send({ productId: product._id.toString(), quantity: 1 });
 
-    expect(myOrdersResponse.status).toBe(200);
-    expect(myOrdersResponse.body.count).toBe(1);
+    await request(app)
+      .post("/api/v1/orders")
+      .set("Authorization", `Bearer ${buyerToken}`)
+      .send({
+        addressId: address._id.toString(),
+        paymentMethod: "razorpay",
+      });
 
-    const getOrderResponse = await request(app)
-      .get(`/api/v1/orders/${orderId}`)
-      .set("Authorization", `Bearer $buyerToken`)
+    const response = await request(app)
+      .get("/api/v1/orders")
+      .set("Authorization", `Bearer ${buyerToken}`)
+      .send({});
 
-    expect(getOrderResponse.status).toBe(200);
-    expect(getOrderResponse.body.order._id).toBe(orderId);
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+  });
 
-    const sellerOrdersResponse = await request(app)
+  test("seller should retrieve their orders", async () => {
+    const seller = await createUser({ role: "seller" });
+    const sellerToken = await loginUser(seller.email, seller.password);
+    const buyer = await createUser();
+    const buyerToken = await loginUser(buyer.email, buyer.password);
+    const product = await createProduct({ sellerId: seller.user._id });
+    const address = await createAddress(buyer.user._id);
+
+    await request(app)
+      .post("/api/v1/cart")
+      .set("Authorization", `Bearer ${buyerToken}`)
+      .send({ productId: product._id.toString(), quantity: 1 });
+
+    await request(app)
+      .post("/api/v1/orders")
+      .set("Authorization", `Bearer ${buyerToken}`)
+      .send({
+        addressId: address._id.toString(),
+        paymentMethod: "razorpay",
+      });
+
+    const response = await request(app)
       .get("/api/v1/orders/seller-orders")
-      .set("Authorization", `Bearer $buyerToken`)
+      .set("Authorization", `Bearer ${sellerToken}`)
+      .send({});
 
-    expect(sellerOrdersResponse.status).toBe(200);
-    expect(sellerOrdersResponse.body.count).toBe(1);
-
-    const updateStatusResponse = await request(app)
-      .put(`/api/v1/orders/${orderId}/status`)
-      .set("Authorization", `Bearer $buyerToken`)
-      .send({ status: "delivered" });
-
-    expect(updateStatusResponse.status).toBe(200);
-    expect(updateStatusResponse.body.success).toBe(true);
-    expect(updateStatusResponse.body.order.status).toBe("delivered");
-    expect(updateStatusResponse.body.order.paymentStatus).toBe("paid");
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
   });
 });

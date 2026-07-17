@@ -12,6 +12,22 @@ const validateResult = (req, res, next) => {
   next();
 };
 
+export const normalizeAddressPayload = (req, res, next) => {
+  if (req.body.street && !req.body.addressLine1) {
+    req.body.addressLine1 = req.body.street;
+  }
+  if (req.body.postalCode && !req.body.pinCode) {
+    req.body.pinCode = req.body.postalCode;
+  }
+  if (!req.body.fullName && req.user?.name) {
+    req.body.fullName = req.user.name;
+  }
+  if (!req.body.phone && req.user?.phone) {
+    req.body.phone = req.user.phone;
+  }
+  next();
+};
+
 // validate user registration before schema validation
 export const registerValidationRules = [
   body("name")
@@ -154,10 +170,10 @@ export const createAddressValidationRules = [
   body("pinCode")
     .trim()
     .notEmpty()
-    .withMessage("PIN code is required")
+    .withMessage("Postal code is required")
     .bail()
-    .matches(/^\d{6}$/)
-    .withMessage("PIN code must be a valid 6-digit Indian PIN code"),
+    .matches(/^[A-Za-z0-9 -]{3,10}$/)
+    .withMessage("Postal code must be valid"),
 
   body("country")
     .optional()
@@ -189,8 +205,8 @@ export const updateAddressValidationRules = [
   body("pinCode")
     .optional()
     .trim()
-    .matches(/^\d{6}$/)
-    .withMessage("PIN code must be a valid 6-digit Indian PIN code"),
+    .matches(/^[A-Za-z0-9 -]{3,10}$/)
+    .withMessage("Postal code must be valid"),
 
   body("isDefault")
     .optional()

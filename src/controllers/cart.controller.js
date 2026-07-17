@@ -3,6 +3,21 @@ import productModel from "../models/product.model.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 
+const getCartItems = (userId) =>
+  cartModel
+    .find({
+      user: userId,
+    })
+    .populate("product", "name price images stock category");
+
+const toCartEnvelope = (cartItems) => ({
+  items: cartItems.map((item) => ({
+    _id: item._id,
+    product: item.product,
+    quantity: item.quantity,
+  })),
+});
+
 // add product to cart controller
 export const addToCart = asyncHandler(async (req, res) => {
   const { productId, quantity } = req.body;
@@ -30,11 +45,14 @@ export const addToCart = asyncHandler(async (req, res) => {
     }
     existingCartItem.quantity = newQuantity;
     await existingCartItem.save();
+    const cartItems = await getCartItems(req.user._id);
 
     return res.status(200).json({
       success: true,
       message: "Cart updated successfully",
-      cart: existingCartItem,
+      cart: toCartEnvelope(cartItems),
+      cartItem: existingCartItem,
+      cartItems,
     });
   }
 
@@ -45,24 +63,25 @@ export const addToCart = asyncHandler(async (req, res) => {
     quantity: quantity || 1,
   });
 
-  return res.status(201).json({
+  const cartItems = await getCartItems(req.user._id);
+
+  return res.status(200).json({
     success: true,
     message: "Product added to cart",
-    cart,
+    cart: toCartEnvelope(cartItems),
+    cartItem: cart,
+    cartItems,
   });
 });
 
 // get my all cart items
 export const getCart = asyncHandler(async (req, res) => {
-  const cartItems = await cartModel
-    .find({
-      user: req.user._id,
-    })
-    .populate("product", "name price images stock category");
+  const cartItems = await getCartItems(req.user._id);
 
   return res.status(200).json({
     success: true,
     count: cartItems.length,
+    cart: toCartEnvelope(cartItems),
     cartItems,
   });
 });
@@ -71,35 +90,56 @@ export const getCart = asyncHandler(async (req, res) => {
 export const removeCartItem = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const cardItem = await cartModel.findOne({
+  let cardItem = await cartModel.findOne({
     _id: id,
     user: req.user._id,
   });
+
+  if (!cardItem) {
+    cardItem = await cartModel.findOne({
+      product: id,
+      user: req.user._id,
+    });
+  }
 
   if (!cardItem) {
     throw new ApiError(404, "Cart item not found");
   }
 
   await cardItem.deleteOne();
+  const cartItems = await getCartItems(req.user._id);
 
   return res.status(200).json({
     success: true,
     message: "Cart item removed successfully",
+    cart: toCartEnvelope(cartItems),
+    cartItems,
   });
 });
 
 // update cart item
 export const updateCartItem = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { quantity } = req.body;
+  const { productId, quantity } = req.body;
 
   if (!quantity || quantity < 1) {
     throw new ApiError(400, "Quantity must be greater than 0");
   }
-  const cartItem = await cartModel.findOne({
-    _id: id,
-    user: req.user._id,
-  });
+  let cartItem = null;
+
+  if (id) {
+    cartItem = await cartModel.findOne({
+      _id: id,
+      user: req.user._id,
+    });
+  }
+
+  if (!cartItem && (productId || id)) {
+    cartItem = await cartModel.findOne({
+      product: productId || id,
+      user: req.user._id,
+    });
+  }
 
   if (!cartItem) {
     throw new ApiError(404, "Cart item not found");
@@ -117,10 +157,13 @@ export const updateCartItem = asyncHandler(async (req, res) => {
 
   cartItem.quantity = quantity; //update quantity
   await cartItem.save();
+  const cartItems = await getCartItems(req.user._id);
 
   return res.status(200).json({
     success: true,
     message: "Cart item updated successfully",
+    cart: toCartEnvelope(cartItems),
     cartItem,
+    cartItems,
   });
 });

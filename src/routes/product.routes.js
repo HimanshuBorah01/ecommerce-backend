@@ -38,18 +38,19 @@ const upload = multer({
 });
 
 const router = express.Router();
-
-// seller product routes
-// product create route
-// POST /api/v1/products/create
-router.post(
-  "/create",
+const productCreateMiddlewares = [
   protect,
   authorize(ROLES.SELLER),
   upload.array("image", 10),
   createProductValidationRules,
   createProduct,
-);
+];
+
+// seller product routes
+// product create route
+// POST /api/v1/products/create
+router.post("/create", productCreateMiddlewares);
+router.post("/", productCreateMiddlewares);
 
 // update a my product
 // PUT /api/v1/products/:id

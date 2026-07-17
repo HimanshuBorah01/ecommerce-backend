@@ -11,8 +11,9 @@ export const createProduct = asyncHandler(async (req, res) => {
 
   // store image file
   const files = req.files;
+  const providedImages = Array.isArray(req.body.images) ? req.body.images : [];
 
-  if (!files || files.length === 0) {
+  if ((!files || files.length === 0) && providedImages.length === 0) {
     throw new ApiError(400, "At least one image is required");
   }
 
@@ -20,8 +21,18 @@ export const createProduct = asyncHandler(async (req, res) => {
   const uploadedFileIds = [];
 
   try {
+    for (const image of providedImages) {
+      if (!image?.url || !image?.fileId) {
+        throw new ApiError(400, "Each image must include url and fileId");
+      }
+      imageUrls.push({
+        url: image.url,
+        fileId: image.fileId,
+      });
+    }
+
     // image file is uploading in array using multer
-    for (const file of files) {
+    for (const file of files || []) {
       const result = await uploadFile(file.buffer.toString("base64"));
       uploadedFileIds.push(result.fileId);
       imageUrls.push({
@@ -40,7 +51,7 @@ export const createProduct = asyncHandler(async (req, res) => {
       seller: req.user._id,
     });
 
-    return res.status(201).json({
+    return res.status(200).json({
       success: true,
       message: "Product created successfully",
       product,

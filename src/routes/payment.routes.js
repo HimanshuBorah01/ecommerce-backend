@@ -21,14 +21,11 @@ router.post(
   authorize(ROLES.USER),
   createRazorpayOrder,
 );
+router.post("/order", protect, authorize(ROLES.USER), createRazorpayOrder);
 
 // verify payment
 // POST /api/v1/payment/verify-payment
-router.post(
-  "/verify-payment",
-  protect,
-  authorize(ROLES.USER),
-  verifyPayment,
-);
+router.post("/verify-payment", protect, authorize(ROLES.USER), verifyPayment);
+router.post("/verify", protect, authorize(ROLES.USER), verifyPayment);
 
 export default router;

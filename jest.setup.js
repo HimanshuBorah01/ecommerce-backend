@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import connectToDatabase from "./src/config/db.js";
 import { connectRedis } from "./src/config/redis.js";
+import redisClient from "./src/config/redis.js";
 
 let mongoServer;
 
@@ -30,6 +31,9 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
+  if (redisClient.isOpen) {
+    await redisClient.quit();
+  }
 
   // Close the Mongoose connection
   await mongoose.connection.close();
