@@ -1,6 +1,26 @@
 import request from "supertest";
 import app from "../src/app.js";
 
+// Helper: register a user and log them in, returning accessToken and cookies
+async function registerAndLogin(userData) {
+  // register user
+  await request(app).post("/api/v1/auth/register").send(userData);
+
+  // login and return the relevant tokens/cookies
+  const loginResponse = await request(app).post("/api/v1/auth/login").send({
+    email: userData.email,
+    password: userData.password,
+  });
+  expect(loginResponse.status).toBe(200);
+
+  const accessToken = loginResponse.body.accessToken;
+  const cookies = Array.isArray(loginResponse.headers["set-cookie"])
+    ? loginResponse.headers["set-cookie"].join("; ")
+    : loginResponse.headers["set-cookie"];
+
+  return { loginResponse, accessToken, cookies };
+}
+
 describe("Authentication API", () => {
   // Test successful user registration
   test("should register a new user successfully", async () => {
@@ -413,20 +433,8 @@ describe("Authentication API", () => {
         confirmPassword: "Password@123",
       };
 
-      await request(app).post("/api/v1/auth/register").send(userData);
-
-      const loginResponse = await request(app).post("/api/v1/auth/login").send({
-        email: userData.email,
-        password: userData.password,
-      });
-      expect(loginResponse.status).toBe(200);
-      expect(loginResponse.headers["set-cookie"]).toBeDefined();
-      const accessToken = loginResponse.body.accessToken;
-      expect(accessToken).toBeDefined();
-
-      const cookies = Array.isArray(loginResponse.headers["set-cookie"])
-        ? loginResponse.headers["set-cookie"].join("; ")
-        : loginResponse.headers["set-cookie"];
+      // register + login helper returns accessToken and cookies
+      const { accessToken, cookies } = await registerAndLogin(userData);
 
       const response = await request(app)
         .post("/api/v1/auth/logout")
