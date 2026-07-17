@@ -3,6 +3,7 @@ jest.setTimeout(60000);
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import connectToDatabase from "./src/config/db.js";
+import { connectRedis } from "./src/config/redis.js";
 
 let mongoServer;
 
@@ -15,6 +16,9 @@ beforeAll(async () => {
 
   // Connect Mongoose using your existing database connection function
   await connectToDatabase(uri);
+
+  // Connect Redis for integration tests
+  await connectRedis();
 });
 
 afterEach(async () => {
@@ -26,6 +30,7 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
+
   // Close the Mongoose connection
   await mongoose.connection.close();
 

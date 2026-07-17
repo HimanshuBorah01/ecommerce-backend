@@ -307,5 +307,35 @@ describe("Authentication API", () => {
     expect(response.status).toBe(400);
   });
 
-  
+  // ========================================
+  // Login API Tests
+  // ========================================
+
+  describe("Login", () => {
+    // Validate successful login
+    test("should login successfully with email and password", async () => {
+      const registerData = {
+        name: "Login User",
+        email: `login.${Date.now()}@example.com`,
+        phone: `9${Math.floor(100000000 + Math.random() * 900000000)}`,
+        password: "Password@123",
+        confirmPassword: "Password@123",
+      };
+
+      // Register the user first
+      await request(app).post("/api/v1/auth/register").send(registerData);
+
+      const loginResponse = await request(app).post("/api/v1/auth/login").send({
+        email: registerData.email,
+        password: registerData.password,
+      });
+
+      if (loginResponse.status !== 200) {
+        console.log(loginResponse.body);
+      }
+
+      expect(loginResponse.status).toBe(200);
+      expect(loginResponse.body.success).toBe(true);
+    });
+  });
 });
