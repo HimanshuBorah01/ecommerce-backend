@@ -307,9 +307,9 @@ describe("Authentication API", () => {
     expect(response.status).toBe(400);
   });
 
-  // ========================================
+  // ----------------------------------------
   // Login API Tests
-  // ========================================
+  // ----------------------------------------
 
   describe("Login", () => {
     // Validate successful login
@@ -336,6 +336,250 @@ describe("Authentication API", () => {
 
       expect(loginResponse.status).toBe(200);
       expect(loginResponse.body.success).toBe(true);
+    });
+
+    // Validate incorrect password
+    test("should not login with incorrect password", async () => {
+      const userData = {
+        name: "Wrong Password User",
+        email: `wrongpass.${Date.now()}@example.com`,
+        phone: `9${Math.floor(100000000 + Math.random() * 900000000)}`,
+        password: "Password@123",
+        confirmPassword: "Password@123",
+      };
+
+      await request(app).post("/api/v1/auth/register").send(userData);
+
+      const response = await request(app).post("/api/v1/auth/login").send({
+        email: userData.email,
+        password: "WrongPassword@123",
+      });
+
+      expect(response.status).toBe(401);
+    });
+
+    // Validate unregistered email
+    test("should not login with unregistered email", async () => {
+      const response = await request(app)
+        .post("/api/v1/auth/login")
+        .send({
+          email: `nouser.${Date.now()}@example.com`,
+          password: "Password@123",
+        });
+
+      expect(response.status).toBe(401);
+    });
+
+    // Validate missing email
+    test("should not login without email", async () => {
+      const response = await request(app).post("/api/v1/auth/login").send({
+        password: "Password@123",
+      });
+
+      expect(response.status).toBe(400);
+    });
+
+    // Validate missing password
+    test("should not login without password", async () => {
+      const response = await request(app).post("/api/v1/auth/login").send({
+        email: "user@example.com",
+      });
+
+      expect(response.status).toBe(400);
+    });
+
+    // Validate invalid email format
+    test("should not login with invalid email format", async () => {
+      const response = await request(app).post("/api/v1/auth/login").send({
+        email: "invalid-email",
+        password: "Password@123",
+      });
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  // ----------------------------------------
+  // Logout API Tests
+  // ----------------------------------------
+
+  describe("Logout", () => {
+    test("should logout successfully with a valid refresh token", async () => {
+      const userData = {
+        name: "Logout User",
+        email: `logout.${Date.now()}@example.com`,
+        phone: `9${Math.floor(100000000 + Math.random() * 900000000)}`,
+        password: "Password@123",
+        confirmPassword: "Password@123",
+      };
+
+      await request(app).post("/api/v1/auth/register").send(userData);
+
+      const loginResponse = await request(app).post("/api/v1/auth/login").send({
+        email: userData.email,
+        password: userData.password,
+      });
+      expect(loginResponse.status).toBe(200);
+      expect(loginResponse.headers["set-cookie"]).toBeDefined();
+      const accessToken = loginResponse.body.accessToken;
+      expect(accessToken).toBeDefined();
+
+      const cookies = Array.isArray(loginResponse.headers["set-cookie"])
+        ? loginResponse.headers["set-cookie"].join("; ")
+        : loginResponse.headers["set-cookie"];
+
+      const response = await request(app)
+        .post("/api/v1/auth/logout")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .set("Cookie", cookies || "");
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+    });
+
+    test("should not logout without a refresh token", async () => {
+      const response = await request(app).post("/api/v1/auth/logout");
+
+      expect([400, 401]).toContain(response.status);
+    });
+  });
+
+  // ----------------------------------------
+  // Refresh Token API Tests
+  // ----------------------------------------
+
+  describe("Refresh Token", () => {
+    test("should refresh access token successfully", async () => {
+      const userData = {
+        name: "Refresh User",
+        email: `refresh.${Date.now()}@example.com`,
+        phone: `9${Math.floor(100000000 + Math.random() * 900000000)}`,
+        password: "Password@123",
+        confirmPassword: "Password@123",
+      };
+
+      await request(app).post("/api/v1/auth/register").send(userData);
+
+      const loginResponse = await request(app).post("/api/v1/auth/login").send({
+        email: userData.email,
+        password: userData.password,
+      });
+
+      expect(loginResponse.status).toBe(200);
+
+      const cookies = loginResponse.headers["set-cookie"];
+
+      const response = await request(app)
+        .post("/api/v1/auth/refresh-token")
+        .set("Cookie", Array.isArray(cookies) ? cookies.join("; ") : cookies);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.accessToken).toBeDefined();
+      expect(response.headers["set-cookie"]).toBeDefined();
+    });
+
+    test("should not refresh without refresh token", async () => {
+      const response = await request(app).post("/api/v1/auth/refresh-token");
+
+      expect([400, 401]).toContain(response.status);
+    });
+
+    test("should not refresh with an invalid refresh token", async () => {
+      const response = await request(app)
+        .post("/api/v1/auth/refresh-token")
+        .set("Cookie", "refreshToken=invalid-token");
+
+      expect(response.status).toBe(401);
+    });
+
+    test("should not refresh after logout", async () => {
+      const userData = {
+        name: "Refresh Logout User",
+        email: `refresh.logout.${Date.now()}@example.com`,
+        phone: `9${Math.floor(100000000 + Math.random() * 900000000)}`,
+        password: "Password@123",
+        confirmPassword: "Password@123",
+      };
+
+      await request(app).post("/api/v1/auth/register").send(userData);
+
+      const loginResponse = await request(app).post("/api/v1/auth/login").send({
+        email: userData.email,
+        password: userData.password,
+      });
+
+      const accessToken = loginResponse.body.accessToken;
+      const cookies = Array.isArray(loginResponse.headers["set-cookie"])
+        ? loginResponse.headers["set-cookie"].join("; ")
+        : loginResponse.headers["set-cookie"];
+
+      await request(app)
+        .post("/api/v1/auth/logout")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .set("Cookie", cookies);
+
+      const response = await request(app)
+        .post("/api/v1/auth/refresh-token")
+        .set("Cookie", cookies);
+
+      expect(response.status).toBe(401);
+    });
+  });
+
+  // ----------------------------------------
+  // Get Current User API Tests
+  // ----------------------------------------
+
+  describe("Get Current User", () => {
+    test("should get current user profile", async () => {
+      const userData = {
+        name: "Profile User",
+        email: `profile.${Date.now()}@example.com`,
+        phone: `9${Math.floor(100000000 + Math.random() * 900000000)}`,
+        password: "Password@123",
+        confirmPassword: "Password@123",
+      };
+
+      await request(app).post("/api/v1/auth/register").send(userData);
+
+      const loginResponse = await request(app)
+        .post("/api/v1/auth/login")
+        .send({
+          email: userData.email,
+          password: userData.password,
+        });
+
+      const accessToken = loginResponse.body.accessToken;
+
+      const response = await request(app)
+        .get("/api/v1/auth/me")
+        .set("Authorization", `Bearer ${accessToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.user.email).toBe(userData.email);
+    });
+
+    test("should not get current user without access token", async () => {
+      const response = await request(app).get("/api/v1/auth/me");
+      expect(response.status).toBe(401);
+    });
+
+    test("should not get current user with invalid access token", async () => {
+      const response = await request(app)
+        .get("/api/v1/auth/me")
+        .set("Authorization", "Bearer invalid-token");
+
+      expect(response.status).toBe(401);
+    });
+
+    test("should not get current user with malformed authorization header", async () => {
+      const response = await request(app)
+        .get("/api/v1/auth/me")
+        .set("Authorization", "invalid-token");
+
+      expect(response.status).toBe(401);
     });
   });
 });
