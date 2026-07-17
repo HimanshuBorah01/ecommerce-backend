@@ -2,9 +2,16 @@ import request from "supertest";
 import app from "../src/app.js";
 import userModel from "../src/models/user.model.js";
 import passwordService from "../src/services/password.service.js";
+// address.test.js
+// Integration tests for the address endpoints.
+// Uses in-file helpers (createUser, loginUser, createProduct) to keep tests isolated and deterministic.
+// Randomized emails/phones are used to avoid unique index collisions in the test DB.
+
 
 const makeRandomEmail = () => `user-${Date.now()}-${Math.floor(Math.random() * 10000)}@example.com`;
 const makeRandomPhone = () => `9${Math.floor(100000000 + Math.random() * 900000000)}`;
+
+// Helper: createUser({ role }) - inserts a user in DB and returns { user, email, password }
 
 async function createUser() {
   const password = "Password@123";
@@ -17,17 +24,26 @@ async function createUser() {
 
   return { user, email: user.email, password };
 }
+// Helper: loginUser(email, password) - performs /auth/login and returns accessToken (asserts status 200)
+
 
 async function loginUser(email, password) {
   const response = await request(app)
     .post("/api/v1/auth/login")
     .send({ email, password });
 
+  // Debug: log login response to help diagnose 401 failures in downstream requests
+  // (This will be removed after debugging)
+  // eslint-disable-next-line no-console
+  console.log('loginUser debug -> status:', response.status, 'body keys:', Object.keys(response.body));
+
   expect(response.status).toBe(200);
   expect(response.body.accessToken).toBeDefined();
 
   return response.body.accessToken;
 }
+
+// Test suite: verifies API behavior and basic happy/error flows for this resource
 
 describe("Address API", () => {
   test("should create a new address", async () => {
@@ -36,7 +52,7 @@ describe("Address API", () => {
 
     const response = await request(app)
       .post("/api/v1/addresses")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({
         fullName: "Jane Doe",
         phone: "9123456789",
@@ -60,7 +76,7 @@ describe("Address API", () => {
 
     await request(app)
       .post("/api/v1/addresses")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({
         fullName: "Jane Doe",
         phone: "9123456789",
@@ -73,7 +89,7 @@ describe("Address API", () => {
 
     const response = await request(app)
       .get("/api/v1/addresses")
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Authorization", `Bearer $accessToken`)
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
@@ -87,7 +103,7 @@ describe("Address API", () => {
 
     const createResponse = await request(app)
       .post("/api/v1/addresses")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({
         fullName: "Jane Doe",
         phone: "9123456789",
@@ -101,7 +117,7 @@ describe("Address API", () => {
     const addressId = createResponse.body.address._id;
     const getResponse = await request(app)
       .get(`/api/v1/addresses/${addressId}`)
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Authorization", `Bearer $accessToken`)
 
     expect(getResponse.status).toBe(200);
     expect(getResponse.body.success).toBe(true);
@@ -114,7 +130,7 @@ describe("Address API", () => {
 
     const createResponse = await request(app)
       .post("/api/v1/addresses")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({
         fullName: "Jane Doe",
         phone: "9123456789",
@@ -129,7 +145,7 @@ describe("Address API", () => {
 
     const updateResponse = await request(app)
       .put(`/api/v1/addresses/${addressId}`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({ city: "Pune", isDefault: true });
 
     expect(updateResponse.status).toBe(200);
@@ -144,7 +160,7 @@ describe("Address API", () => {
 
     const createResponse = await request(app)
       .post("/api/v1/addresses")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({
         fullName: "Jane Doe",
         phone: "9123456789",
@@ -159,7 +175,7 @@ describe("Address API", () => {
 
     const deleteResponse = await request(app)
       .delete(`/api/v1/addresses/${addressId}`)
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Authorization", `Bearer $accessToken`)
 
     expect(deleteResponse.status).toBe(200);
     expect(deleteResponse.body.success).toBe(true);

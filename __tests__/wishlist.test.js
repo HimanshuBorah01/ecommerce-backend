@@ -3,9 +3,16 @@ import app from "../src/app.js";
 import userModel from "../src/models/user.model.js";
 import passwordService from "../src/services/password.service.js";
 import productModel from "../src/models/product.model.js";
+// wishlist.test.js
+// Integration tests for the wishlist endpoints.
+// Uses in-file helpers (createUser, loginUser, createProduct) to keep tests isolated and deterministic.
+// Randomized emails/phones are used to avoid unique index collisions in the test DB.
+
 
 const makeRandomEmail = () => `user-${Date.now()}-${Math.floor(Math.random() * 10000)}@example.com`;
 const makeRandomPhone = () => `9${Math.floor(100000000 + Math.random() * 900000000)}`;
+
+// Helper: createUser({ role }) - inserts a user in DB and returns { user, email, password }
 
 async function createUser({ role = "user" } = {}) {
   const password = "Password@123";
@@ -17,6 +24,8 @@ async function createUser({ role = "user" } = {}) {
     role,
   }).then((user) => ({ user, email: user.email, password }));
 }
+// Helper: loginUser(email, password) - performs /auth/login and returns accessToken (asserts status 200)
+
 
 async function loginUser(email, password) {
   const response = await request(app)
@@ -27,7 +36,9 @@ async function loginUser(email, password) {
   expect(response.body.accessToken).toBeDefined();
 
   return response.body.accessToken;
-}
+  }
+// Helper: createProduct(...) - creates a product document used in tests, accepts overrides and returns the product model instance
+
 
 async function createProduct({ sellerId, overrides = {} } = {}) {
   return productModel.create({
@@ -42,6 +53,8 @@ async function createProduct({ sellerId, overrides = {} } = {}) {
   });
 }
 
+// Test suite: verifies API behavior and basic happy/error flows for this resource
+
 describe("Wishlist API", () => {
   test("should add a product to the wishlist", async () => {
     const seller = await createUser({ role: "seller" });
@@ -51,7 +64,7 @@ describe("Wishlist API", () => {
 
     const response = await request(app)
       .post(`/api/v1/wishlist/${product._id.toString()}`)
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Authorization", `Bearer $accessToken`)
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
@@ -66,11 +79,11 @@ describe("Wishlist API", () => {
 
     await request(app)
       .post(`/api/v1/wishlist/${product._id.toString()}`)
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Authorization", `Bearer $accessToken`)
 
     const response = await request(app)
       .get("/api/v1/wishlist")
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Authorization", `Bearer $accessToken`)
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
@@ -86,11 +99,11 @@ describe("Wishlist API", () => {
 
     await request(app)
       .post(`/api/v1/wishlist/${product._id.toString()}`)
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Authorization", `Bearer $accessToken`)
 
     const response = await request(app)
       .delete(`/api/v1/wishlist/${product._id.toString()}`)
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Authorization", `Bearer $accessToken`)
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
@@ -105,11 +118,11 @@ describe("Wishlist API", () => {
 
     await request(app)
       .post(`/api/v1/wishlist/${product._id.toString()}`)
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Authorization", `Bearer $accessToken`)
 
     const duplicateResponse = await request(app)
       .post(`/api/v1/wishlist/${product._id.toString()}`)
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Authorization", `Bearer $accessToken`)
 
     expect(duplicateResponse.status).toBe(400);
     expect(duplicateResponse.body.success).toBe(false);

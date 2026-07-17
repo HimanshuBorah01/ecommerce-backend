@@ -3,11 +3,18 @@ import app from "../src/app.js";
 import userModel from "../src/models/user.model.js";
 import passwordService from "../src/services/password.service.js";
 import productModel from "../src/models/product.model.js";
+// cart.test.js
+// Integration tests for the cart endpoints.
+// Uses in-file helpers (createUser, loginUser, createProduct) to keep tests isolated and deterministic.
+// Randomized emails/phones are used to avoid unique index collisions in the test DB.
+
 
 const makeRandomEmail = () =>
   `user-${Date.now()}-${Math.floor(Math.random() * 10000)}@example.com`;
 const makeRandomPhone = () =>
   `9${Math.floor(100000000 + Math.random() * 900000000)}`;
+
+// Helper: createUser({ role }) - inserts a user in DB and returns { user, email, password }
 
 async function createUser({ role = "user" } = {}) {
   const password = "Password@123";
@@ -21,6 +28,8 @@ async function createUser({ role = "user" } = {}) {
 
   return { user, email: user.email, password };
 }
+// Helper: loginUser(email, password) - performs /auth/login and returns accessToken (asserts status 200)
+
 
 async function loginUser(email, password) {
   const response = await request(app)
@@ -31,7 +40,8 @@ async function loginUser(email, password) {
   expect(response.body.accessToken).toBeDefined();
 
   return response.body.accessToken;
-}
+// Helper: createProduct(...) - creates a product document used in tests, accepts overrides and returns the product model instance
+
 
 async function createProduct({ sellerId, stock = 10, overrides = {} } = {}) {
   return productModel.create({
@@ -46,6 +56,8 @@ async function createProduct({ sellerId, stock = 10, overrides = {} } = {}) {
   });
 }
 
+// Test suite: verifies API behavior and basic happy/error flows for this resource
+
 describe("Cart API", () => {
   test("should add a product to the cart", async () => {
     const seller = await createUser({ role: "seller" });
@@ -56,7 +68,7 @@ describe("Cart API", () => {
 
     const response = await request(app)
       .post("/api/v1/cart/add")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({ productId: product._id.toString(), quantity: 2 });
 
     expect(response.status).toBe(201);
@@ -77,7 +89,7 @@ describe("Cart API", () => {
 
     const response = await request(app)
       .post("/api/v1/cart/add")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({ productId: product._id.toString(), quantity: 10 });
 
     expect(response.status).toBe(400);
@@ -92,12 +104,12 @@ describe("Cart API", () => {
 
     await request(app)
       .post("/api/v1/cart/add")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({ productId: product._id.toString(), quantity: 1 });
 
     const getResponse = await request(app)
       .get("/api/v1/cart")
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Authorization", `Bearer $accessToken`)
 
     expect(getResponse.status).toBe(200);
     expect(getResponse.body.success).toBe(true);
@@ -115,14 +127,14 @@ describe("Cart API", () => {
 
     const addResponse = await request(app)
       .post("/api/v1/cart/add")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({ productId: product._id.toString(), quantity: 1 });
 
     const cartItemId = addResponse.body.cart._id;
 
     const updateResponse = await request(app)
       .put(`/api/v1/cart/${cartItemId}`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({ quantity: 5 });
 
     expect(updateResponse.status).toBe(200);
@@ -138,15 +150,16 @@ describe("Cart API", () => {
 
     const addResponse = await request(app)
       .post("/api/v1/cart/add")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({ productId: product._id.toString(), quantity: 1 });
 
     const cartItemId = addResponse.body.cart._id;
     const deleteResponse = await request(app)
       .delete(`/api/v1/cart/${cartItemId}`)
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Authorization", `Bearer $accessToken`)
 
     expect(deleteResponse.status).toBe(200);
     expect(deleteResponse.body.success).toBe(true);
   });
 });
+}

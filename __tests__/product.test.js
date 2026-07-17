@@ -1,4 +1,9 @@
 import { jest } from "@jest/globals";
+// product.test.js
+// Integration tests for the product endpoints.
+// Uses in-file helpers (createUser, loginUser, createProduct) to keep tests isolated and deterministic.
+// Randomized emails/phones are used to avoid unique index collisions in the test DB.
+
 
 await jest.unstable_mockModule("../src/services/storage.service.js", () => ({
   __esModule: true,
@@ -36,6 +41,8 @@ async function createSeller() {
   return { seller, email: seller.email, password };
 }
 
+// Helper: loginUser(email, password) - performs /auth/login and returns accessToken (asserts status 200)
+
 async function loginUser(email, password) {
   const response = await request(app)
     .post("/api/v1/auth/login")
@@ -47,6 +54,8 @@ async function loginUser(email, password) {
   return response.body.accessToken;
 }
 
+// Test suite: verifies API behavior and basic happy/error flows for this resource
+
 describe("Product API", () => {
   test("should create, update, retrieve, and delete a product", async () => {
     const sellerData = await createSeller();
@@ -54,7 +63,7 @@ describe("Product API", () => {
 
     const createResponse = await request(app)
       .post("/api/v1/products/create")
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .field("name", "Test Product")
       .field("description", "The best test product")
       .field("price", "250")
@@ -79,7 +88,7 @@ describe("Product API", () => {
 
     const updateResponse = await request(app)
       .put(`/api/v1/products/${productId}`)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({ name: "Updated Product", price: 300 });
 
     expect(updateResponse.status).toBe(200);
@@ -88,7 +97,7 @@ describe("Product API", () => {
 
     const deleteResponse = await request(app)
       .delete(`/api/v1/products/${productId}`)
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Authorization", `Bearer $accessToken`)
 
     expect(deleteResponse.status).toBe(200);
     expect(deleteResponse.body.success).toBe(true);

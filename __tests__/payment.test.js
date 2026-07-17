@@ -1,4 +1,9 @@
 import { jest } from "@jest/globals";
+// payment.test.js
+// Integration tests for the payment endpoints.
+// Uses in-file helpers (createUser, loginUser, createProduct) to keep tests isolated and deterministic.
+// Randomized emails/phones are used to avoid unique index collisions in the test DB.
+
 
 await jest.unstable_mockModule("../src/services/razorpay.service.js", () => ({
   __esModule: true,
@@ -30,6 +35,8 @@ const passwordService = passwordServiceModule.default;
 const makeRandomEmail = () => `user-${Date.now()}-${Math.floor(Math.random() * 10000)}@example.com`;
 const makeRandomPhone = () => `9${Math.floor(100000000 + Math.random() * 900000000)}`;
 
+// Helper: createUser({ role }) - inserts a user in DB and returns { user, email, password }
+
 async function createUser({ role = "user" } = {}) {
   const password = "Password@123";
   const user = await userModel.create({
@@ -42,6 +49,8 @@ async function createUser({ role = "user" } = {}) {
 
   return { user, email: user.email, password };
 }
+// Helper: loginUser(email, password) - performs /auth/login and returns accessToken (asserts status 200)
+
 
 async function loginUser(email, password) {
   const response = await request(app)
@@ -50,7 +59,9 @@ async function loginUser(email, password) {
 
   expect(response.status).toBe(200);
   return response.body.accessToken;
-}
+  }
+// Helper: createProduct(...) - creates a product document used in tests, accepts overrides and returns the product model instance
+
 
 async function createProduct(sellerId) {
   return productModel.create({
@@ -64,6 +75,8 @@ async function createProduct(sellerId) {
   });
 }
 
+// Test suite: verifies API behavior and basic happy/error flows for this resource
+
 describe("Payment API", () => {
   test("should create a Razorpay order and verify payment successfully", async () => {
     const seller = await createUser({ role: "seller" });
@@ -74,7 +87,7 @@ describe("Payment API", () => {
 
     const addressResponse = await request(app)
       .post("/api/v1/addresses")
-      .set("Authorization", `Bearer ${buyerToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({
         fullName: "Payment Buyer",
         phone: "9123456789",
@@ -90,14 +103,14 @@ describe("Payment API", () => {
 
     const cartResponse = await request(app)
       .post("/api/v1/cart/add")
-      .set("Authorization", `Bearer ${buyerToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({ productId: product._id.toString(), quantity: 1 });
 
     expect(cartResponse.status).toBe(201);
 
     const orderResponse = await request(app)
       .post("/api/v1/orders")
-      .set("Authorization", `Bearer ${buyerToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({
         addressId: addressResponse.body.address._id,
         paymentMethod: "razorpay",
@@ -115,7 +128,7 @@ describe("Payment API", () => {
 
     const verifyResponse = await request(app)
       .post("/api/v1/payment/verify-payment")
-      .set("Authorization", `Bearer ${buyerToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({
         razorpay_order_id: orderResponse.body.razorpayOrder.id,
         razorpay_payment_id: "payment_test_id",
@@ -133,7 +146,7 @@ describe("Payment API", () => {
 
     const response = await request(app)
       .post("/api/v1/payment/create-order")
-      .set("Authorization", `Bearer ${buyerToken}`)
+      .set("Authorization", `Bearer $accessToken`)
       .send({ amount: 150 });
 
     expect(response.status).toBe(200);
