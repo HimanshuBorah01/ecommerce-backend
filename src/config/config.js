@@ -1,87 +1,86 @@
 import dotenv from "dotenv";
 
-dotenv.config();
+// Load environment variables from .env without extra console noise.
+dotenv.config({ quiet: true });
 
-if (!process.env.PORT) {
-  throw new Error("PORT is not defined in environment variables.");
-}
-if (!process.env.DB_URL) {
-  throw new Error("DB_URL is not defined in environment variables.");
-}
-if (!process.env.JWT_SECRET) {
-  throw new Error("JWT_SECRET is not defined in environment variables.");
-}
-if (!process.env.IMAGEKIT_PRIVATE_KEY) {
-  throw new Error(
-    "IMAGEKIT_PRIVATE_KEY is not defined in environment variables.",
-  );
-}
-if (!process.env.RAZORPAY_KEY_ID) {
-  throw new Error("RAZORPAY_KEY_ID is not defined in environment variables.");
-}
-if (!process.env.RAZORPAY_KEY_SECRET) {
-  throw new Error(
-    "RAZORPAY_KEY_SECRET is not defined in environment variables.",
-  );
-}
-if (!process.env.REDIS_URL) {
-  throw new Error("REDIS_URL is not defined in environment variables.");
-}
-if (!process.env.JWT_ACCESS_TOKEN_EXPIRES_IN) {
-  throw new Error(
-    "JWT_ACCESS_TOKEN_EXPIRES_IN is not defined in environment variables.",
-  );
-}
-if (!process.env.JWT_REFRESH_TOKEN_EXPIRES_IN) {
-  throw new Error(
-    "JWT_REFRESH_TOKEN_EXPIRES_IN is not defined in environment variables.",
-  );
-}
-if (!process.env.NODE_ENV) {
-  throw new Error("NODE_ENV is not defined in environment variables.");
-}
-if (!process.env.CLIENT_URL) {
-  throw new Error("CLIENT_URL is not defined in environment variables.");
-}
-if (!process.env.SMTP_HOST) {
-  throw new Error("SMTP_HOST is not defined in environment variables.");
-}
-if (!process.env.SMTP_PORT) {
-  throw new Error("SMTP_PORT is not defined in environment variables.");
-}
-if (!process.env.SMTP_USER) {
-  throw new Error("SMTP_USER is not defined in environment variables.");
-}
-if (!process.env.SMTP_PASS) {
-  throw new Error("SMTP_PASS is not defined in environment variables.");
-}
-if (!process.env.SMTP_FROM) {
-  throw new Error("SMTP_FROM is not defined in environment variables.");
+// Read a required environment variable and fail fast if it is missing.
+const required = (name) => {
+  const value = process.env[name];
+
+  if (!value || value.trim() === "") {
+    throw new Error(`${name} is not defined in environment variables.`);
+  }
+
+  return value.trim();
+};
+
+// Convert required numeric environment variables like PORT.
+const number = (name) => {
+  const value = Number(required(name));
+
+  if (!Number.isInteger(value)) {
+    throw new Error(`${name} must be a valid number.`);
+  }
+
+  return value;
+};
+
+const nodeEnv = required("NODE_ENV");
+const isProduction = nodeEnv === "production";
+
+// Keep NODE_ENV limited to known application modes.
+if (!["development", "test", "production"].includes(nodeEnv)) {
+  throw new Error("NODE_ENV must be development, test, or production.");
 }
 
+const port = number("PORT");
+const smtpPort = number("SMTP_PORT");
+const jwtSecret = required("JWT_SECRET");
+const clientUrl = required("CLIENT_URL");
+
+if (port < 1 || port > 65535) {
+  throw new Error("PORT must be between 1 and 65535.");
+}
+
+if (smtpPort < 1 || smtpPort > 65535) {
+  throw new Error("SMTP_PORT must be between 1 and 65535.");
+}
+
+// Extra checks that should only be strict in production.
+if (isProduction) {
+  if (jwtSecret.length < 32) {
+    throw new Error("JWT_SECRET must be at least 32 characters in production.");
+  }
+
+  if (!clientUrl.startsWith("https://")) {
+    throw new Error("CLIENT_URL must use https in production.");
+  }
+}
+
+// Central config object used by the rest of the app.
 const config = {
-  PORT: Number(process.env.PORT),
-  DB_URL: process.env.DB_URL,
-  JWT_SECRET: process.env.JWT_SECRET,
+  PORT: port,
+  DB_URL: required("DB_URL"),
+  JWT_SECRET: jwtSecret,
 
-  IMAGEKIT_PRIVATE_KEY: process.env.IMAGEKIT_PRIVATE_KEY,
-  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID,
-  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
-  
-  REDIS_URL: process.env.REDIS_URL,
+  IMAGEKIT_PRIVATE_KEY: required("IMAGEKIT_PRIVATE_KEY"),
+  RAZORPAY_KEY_ID: required("RAZORPAY_KEY_ID"),
+  RAZORPAY_KEY_SECRET: required("RAZORPAY_KEY_SECRET"),
 
-  JWT_ACCESS_TOKEN_EXPIRES_IN: process.env.JWT_ACCESS_TOKEN_EXPIRES_IN,
-  JWT_REFRESH_TOKEN_EXPIRES_IN: process.env.JWT_REFRESH_TOKEN_EXPIRES_IN,
-  NODE_ENV: process.env.NODE_ENV,
-  IS_PRODUCTION: process.env.NODE_ENV === "production",
-  CLIENT_URL: process.env.CLIENT_URL,
+  REDIS_URL: required("REDIS_URL"),
 
-  SMTP_HOST: process.env.SMTP_HOST,
-  SMTP_PORT: Number(process.env.SMTP_PORT),
-  SMTP_SECURE: Number(process.env.SMTP_PORT) === 465,
-  SMTP_USER: process.env.SMTP_USER,
-  SMTP_PASS: process.env.SMTP_PASS,
-  SMTP_FROM: process.env.SMTP_FROM,
+  JWT_ACCESS_TOKEN_EXPIRES_IN: required("JWT_ACCESS_TOKEN_EXPIRES_IN"),
+  JWT_REFRESH_TOKEN_EXPIRES_IN: required("JWT_REFRESH_TOKEN_EXPIRES_IN"),
+  NODE_ENV: nodeEnv,
+  IS_PRODUCTION: isProduction,
+  CLIENT_URL: clientUrl,
+
+  SMTP_HOST: required("SMTP_HOST"),
+  SMTP_PORT: smtpPort,
+  SMTP_SECURE: smtpPort === 465,
+  SMTP_USER: required("SMTP_USER"),
+  SMTP_PASS: required("SMTP_PASS"),
+  SMTP_FROM: required("SMTP_FROM"),
 };
 
 export default config;
