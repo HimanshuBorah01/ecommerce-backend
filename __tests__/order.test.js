@@ -87,6 +87,9 @@ describe("Order API", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
+
+    const productAfterOrder = await productModel.findById(product._id);
+    expect(productAfterOrder.stock).toBe(20);
   });
 
   test("should retrieve orders for buyer", async () => {

@@ -4,6 +4,7 @@ import razorpay from "../services/razorpay.service.js";
 import config from "../config/config.js";
 import orderModel from "../models/order.model.js";
 import cartModel from "../models/cart.model.js";
+import productModel from "../models/product.model.js";
 
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
@@ -118,6 +119,22 @@ export const verifyPayment = asyncHandler(async (req, res) => {
 
   if (order.paymentStatus !== "pending") {
     throw new ApiError(400, "Order is not awaiting payment");
+  }
+
+  // Payment is valid now, so reduce stock for the ordered products.
+  for (const item of order.items) {
+    const product = await productModel.findById(item.product);
+
+    if (!product) {
+      throw new ApiError(404, "Product not found");
+    }
+
+    if (product.stock < item.quantity) {
+      throw new ApiError(400, `Insufficient stock for ${product.name}`);
+    }
+
+    product.stock -= item.quantity;
+    await product.save();
   }
 
   order.paymentStatus = "paid";

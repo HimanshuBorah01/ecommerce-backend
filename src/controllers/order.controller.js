@@ -54,12 +54,6 @@ export const createOrder = asyncHandler(async (req, res) => {
     totalAmount += item.product.price * item.quantity; // calculate total amount
   }
 
-  // Deduct stock for each purchased product
-  for (const item of cartItems) {
-    item.product.stock -= item.quantity;
-    await item.product.save();
-  }
-
   // created the order
   const order = await orderModel.create({
     user: req.user._id,
@@ -85,6 +79,13 @@ export const createOrder = asyncHandler(async (req, res) => {
       order,
       razorpayOrder,
     });
+  }
+
+  // For COD, stock is reduced immediately because the order is confirmed now.
+  // For Razorpay, stock is reduced only after successful payment verification.
+  for (const item of cartItems) {
+    item.product.stock -= item.quantity;
+    await item.product.save();
   }
 
   await cartModel.deleteMany({

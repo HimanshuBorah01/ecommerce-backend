@@ -1,5 +1,7 @@
 import request from "supertest";
+import crypto from "crypto";
 import app from "../src/app.js";
+import config from "../src/config/config.js";
 import userModel from "../src/models/user.model.js";
 import passwordService from "../src/services/password.service.js";
 import productModel from "../src/models/product.model.js";
@@ -122,15 +124,25 @@ describe("Payment API", () => {
       .set("Authorization", `Bearer ${accessToken}`)
       .send({ orderId: orderRes.body.order._id });
 
+    const razorpayPaymentId = "pay_test123";
+    const razorpaySignature = crypto
+      .createHmac("sha256", config.RAZORPAY_KEY_SECRET)
+      .update(`${paymentRes.body.razorpayOrderId}|${razorpayPaymentId}`)
+      .digest("hex");
+
     const response = await request(app)
       .post("/api/v1/payment/verify")
       .set("Authorization", `Bearer ${accessToken}`)
       .send({
         razorpayOrderId: paymentRes.body.razorpayOrderId,
-        razorpayPaymentId: "pay_test123",
-        razorpaySignature: "test_signature",
+        razorpayPaymentId,
+        razorpaySignature,
       });
 
-    expect([200, 400]).toContain(response.status);
+    expect(response.status).toBe(200);
+    expect(response.body.order.paymentStatus).toBe("paid");
+
+    const productAfterPayment = await productModel.findById(product._id);
+    expect(productAfterPayment.stock).toBe(9);
   });
 });
