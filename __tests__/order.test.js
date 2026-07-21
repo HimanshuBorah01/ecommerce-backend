@@ -92,6 +92,33 @@ describe("Order API", () => {
     expect(productAfterOrder.stock).toBe(20);
   });
 
+  test("should reduce stock when creating a COD order", async () => {
+    const seller = await createUser({ role: "seller" });
+    const buyer = await createUser();
+    const buyerToken = await loginUser(buyer.email, buyer.password);
+    const product = await createProduct({ sellerId: seller.user._id });
+    const address = await createAddress(buyer.user._id);
+
+    await request(app)
+      .post("/api/v1/cart")
+      .set("Authorization", `Bearer ${buyerToken}`)
+      .send({ productId: product._id.toString(), quantity: 1 });
+
+    const response = await request(app)
+      .post("/api/v1/orders")
+      .set("Authorization", `Bearer ${buyerToken}`)
+      .send({
+        addressId: address._id.toString(),
+        paymentMethod: "cod",
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body.success).toBe(true);
+
+    const productAfterOrder = await productModel.findById(product._id);
+    expect(productAfterOrder.stock).toBe(19);
+  });
+
   test("should retrieve orders for buyer", async () => {
     const seller = await createUser({ role: "seller" });
     const buyer = await createUser();

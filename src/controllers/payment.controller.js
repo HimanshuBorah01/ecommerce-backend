@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import mongoose from "mongoose";
 
 import razorpay from "../services/razorpay.service.js";
 import config from "../config/config.js";
@@ -101,53 +102,84 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid payment signature");
   }
 
-  const order = await orderModel.findOne({
-    razorpayOrderId: razorpay_order_id,
-  });
+  const session = await mongoose.startSession();
+  let order;
+  let alreadyPaid = false;
 
-  if (!order) {
-    throw new ApiError(404, "Order not found");
+  try {
+    await session.withTransaction(async () => {
+      order = await orderModel
+        .findOne({
+          razorpayOrderId: razorpay_order_id,
+          user: req.user._id,
+        })
+        .session(session);
+
+      if (!order) {
+        throw new ApiError(404, "Order not found");
+      }
+
+      if (order.paymentStatus === "paid") {
+        alreadyPaid = true;
+        return;
+      }
+
+      if (order.paymentStatus !== "pending") {
+        throw new ApiError(400, "Order is not awaiting payment");
+      }
+
+      // Payment is valid now, so reduce stock for the ordered products.
+      for (const item of order.items) {
+        const product = await productModel
+          .findById(item.product)
+          .session(session);
+
+        if (!product) {
+          throw new ApiError(404, "Product not found");
+        }
+
+        const result = await productModel.updateOne(
+          {
+            _id: item.product,
+            stock: { $gte: item.quantity },
+          },
+          {
+            $inc: { stock: -item.quantity },
+          },
+          { session },
+        );
+
+        if (result.modifiedCount !== 1) {
+          throw new ApiError(400, `Insufficient stock for ${product.name}`);
+        }
+      }
+
+      order.paymentStatus = "paid";
+      order.status = "confirmed";
+      order.razorpayPaymentId = razorpay_payment_id;
+      order.razorpaySignature = razorpay_signature;
+      order.paidAt = new Date();
+
+      await order.save({ session });
+
+      await cartModel.deleteMany(
+        {
+          user: order.user,
+        },
+        { session },
+      );
+    });
+  } finally {
+    await session.endSession();
   }
 
-  if (order.paymentStatus === "paid") {
+  if (alreadyPaid) {
     return res.status(200).json({
       success: true,
       message: "Payment already verified",
       order,
     });
   }
-
-  if (order.paymentStatus !== "pending") {
-    throw new ApiError(400, "Order is not awaiting payment");
-  }
-
-  // Payment is valid now, so reduce stock for the ordered products.
-  for (const item of order.items) {
-    const product = await productModel.findById(item.product);
-
-    if (!product) {
-      throw new ApiError(404, "Product not found");
-    }
-
-    if (product.stock < item.quantity) {
-      throw new ApiError(400, `Insufficient stock for ${product.name}`);
-    }
-
-    product.stock -= item.quantity;
-    await product.save();
-  }
-
-  order.paymentStatus = "paid";
-  order.status = "confirmed";
-  order.razorpayPaymentId = razorpay_payment_id;
-  order.razorpaySignature = razorpay_signature;
-  order.paidAt = new Date();
-
-  await order.save();
-
-  await cartModel.deleteMany({
-    user: order.user,
-  });
 
   return res.status(200).json({
     success: true,

@@ -1,7 +1,7 @@
 import { jest } from "@jest/globals";
 jest.setTimeout(60000);
 import mongoose from "mongoose";
-import { MongoMemoryServer } from "mongodb-memory-server";
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 import connectToDatabase from "./src/config/db.js";
 import { connectRedis } from "./src/config/redis.js";
 import redisClient from "./src/config/redis.js";
@@ -9,8 +9,12 @@ import redisClient from "./src/config/redis.js";
 let mongoServer;
 
 beforeAll(async () => {
-  // Create an in-memory MongoDB instance
-  mongoServer = await MongoMemoryServer.create();
+  // Create an in-memory MongoDB replica set so transactions can run in tests.
+  mongoServer = await MongoMemoryReplSet.create({
+    replSet: {
+      count: 1,
+    },
+  });
 
   // Get the connection URI
   const uri = mongoServer.getUri();

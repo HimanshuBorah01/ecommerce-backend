@@ -1,6 +1,8 @@
+import mongoose from "mongoose";
 import cartModel from "../models/cart.model.js";
 import orderModel from "../models/order.model.js";
 import addressModel from "../models/address.model.js";
+import productModel from "../models/product.model.js";
 import razorpay from "../services/razorpay.service.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
@@ -8,60 +10,113 @@ import ApiError from "../utils/ApiError.js";
 // create order controller
 export const createOrder = asyncHandler(async (req, res) => {
   const { addressId, paymentMethod } = req.body;
+
   // validate the payment method
   if (!["cod", "razorpay"].includes(paymentMethod)) {
     throw new ApiError(400, "Invalid payment method");
   }
 
-  // find the address and validate
-  const address = await addressModel.findOne({
-    _id: addressId,
-    user: req.user._id,
-  });
-
-  if (!address) {
-    throw new ApiError(404, "Address not found");
-  }
-
-  // find the cart items first and populate
-  const cartItems = await cartModel
-    .find({
-      user: req.user._id,
-    })
-    .populate("product");
-
-  if (cartItems.length === 0) {
-    throw new ApiError(400, "Cart is empty");
-  }
-
-  const items = [];
+  const session = await mongoose.startSession();
+  let order;
   let totalAmount = 0;
-  // iterate cartItems into items array
-  for (const item of cartItems) {
-    if (!item.product) {
-      throw new ApiError(404, "Product not found");
-    }
-    if (item.product.stock < item.quantity) {
-      throw new ApiError(
-        400,
-        `Insufficient stock for ${item.product.name}`,
-      );
-    }
-    items.push({
-      product: item.product._id,
-      quantity: item.quantity,
-    });
-    totalAmount += item.product.price * item.quantity; // calculate total amount
-  }
 
-  // created the order
-  const order = await orderModel.create({
-    user: req.user._id,
-    items,
-    totalAmount,
-    address: addressId,
-    paymentMethod,
-  });
+  try {
+    await session.withTransaction(async () => {
+      // find the address and validate
+      const address = await addressModel
+        .findOne({
+          _id: addressId,
+          user: req.user._id,
+        })
+        .session(session);
+
+      if (!address) {
+        throw new ApiError(404, "Address not found");
+      }
+
+      // find the cart items first and populate
+      const cartItems = await cartModel
+        .find({
+          user: req.user._id,
+        })
+        .populate("product")
+        .session(session);
+
+      if (cartItems.length === 0) {
+        throw new ApiError(400, "Cart is empty");
+      }
+
+      const items = [];
+      totalAmount = 0;
+
+      // build order items and check stock
+      for (const item of cartItems) {
+        if (!item.product) {
+          throw new ApiError(404, "Product not found");
+        }
+
+        if (item.product.stock < item.quantity) {
+          throw new ApiError(
+            400,
+            `Insufficient stock for ${item.product.name}`,
+          );
+        }
+
+        items.push({
+          product: item.product._id,
+          quantity: item.quantity,
+        });
+        totalAmount += item.product.price * item.quantity;
+      }
+
+      const createdOrders = await orderModel.create(
+        [
+          {
+            user: req.user._id,
+            items,
+            totalAmount,
+            address: addressId,
+            paymentMethod,
+          },
+        ],
+        { session },
+      );
+
+      order = createdOrders[0];
+
+      if (paymentMethod === "cod") {
+        // COD is confirmed now, so update stock and clear cart together.
+        for (const item of cartItems) {
+          const result = await productModel.updateOne(
+            {
+              _id: item.product._id,
+              stock: { $gte: item.quantity },
+            },
+            {
+              $inc: { stock: -item.quantity },
+            },
+            { session },
+          );
+
+          if (result.modifiedCount !== 1) {
+            throw new ApiError(
+              400,
+              `Insufficient stock for ${item.product.name}`,
+            );
+          }
+        }
+
+        await cartModel.deleteMany(
+          {
+            user: req.user._id,
+          },
+          { session },
+        );
+      }
+    });
+  } finally {
+    await session.endSession();
+  }
 
   if (paymentMethod === "razorpay") {
     const razorpayOrder = await razorpay.orders.create({
@@ -70,8 +125,15 @@ export const createOrder = asyncHandler(async (req, res) => {
       receipt: order._id.toString(),
     });
 
-    order.razorpayOrderId = razorpayOrder.id;
-    await order.save();
+    order = await orderModel.findByIdAndUpdate(
+      order._id,
+      {
+        razorpayOrderId: razorpayOrder.id,
+      },
+      {
+        returnDocument: "after",
+      },
+    );
 
     return res.status(200).json({
       success: true,
@@ -80,17 +142,6 @@ export const createOrder = asyncHandler(async (req, res) => {
       razorpayOrder,
     });
   }
-
-  // For COD, stock is reduced immediately because the order is confirmed now.
-  // For Razorpay, stock is reduced only after successful payment verification.
-  for (const item of cartItems) {
-    item.product.stock -= item.quantity;
-    await item.product.save();
-  }
-
-  await cartModel.deleteMany({
-    user: req.user._id,
-  });
 
   return res.status(201).json({
     success: true,
