@@ -9,18 +9,7 @@ import { ROLES } from "../constants/roles.js";
 
 const router = express.Router();
 
-// TEST ROUTE ONLY
-// Used during Razorpay integration testing.
-// Actual Razorpay orders are now created from orderController.createOrder().
-// Can be removed later if no longer needed.
-// create payment route
-// POST /api/v1/payment/create-order
-router.post(
-  "/create-order",
-  protect,
-  authorize(ROLES.USER),
-  createRazorpayOrder,
-);
+// Create or reuse a Razorpay order for an existing app order.
 router.post("/order", protect, authorize(ROLES.USER), createRazorpayOrder);
 
 // verify payment

@@ -74,6 +74,19 @@ async function addToCart(accessToken, productId) {
 }
 
 describe("Payment API", () => {
+  test("should not create a Razorpay order from client amount", async () => {
+    const buyer = await createUser();
+    const accessToken = await loginUser(buyer.email, buyer.password);
+
+    const response = await request(app)
+      .post("/api/v1/payment/order")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ amount: 1000 });
+
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+  });
+
   test("should create a Razorpay order", async () => {
     const seller = await createUser({ role: "seller" });
     const buyer = await createUser();
