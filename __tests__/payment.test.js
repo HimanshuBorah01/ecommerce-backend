@@ -116,6 +116,50 @@ describe("Payment API", () => {
     expect(response.body.success).toBe(true);
   });
 
+  test("should not verify payment for another user's order", async () => {
+    const seller = await createUser({ role: "seller" });
+    const buyer = await createUser();
+    const otherUser = await createUser();
+    const buyerToken = await loginUser(buyer.email, buyer.password);
+    const otherUserToken = await loginUser(otherUser.email, otherUser.password);
+    const product = await createProduct({ sellerId: seller.user._id });
+    const address = await createAddress(buyer.user._id);
+    await addToCart(buyerToken, product._id);
+
+    const orderRes = await request(app)
+      .post("/api/v1/orders")
+      .set("Authorization", `Bearer ${buyerToken}`)
+      .send({
+        addressId: address._id.toString(),
+        paymentMethod: "razorpay",
+      });
+
+    const paymentRes = await request(app)
+      .post("/api/v1/payment/order")
+      .set("Authorization", `Bearer ${buyerToken}`)
+      .send({ orderId: orderRes.body.order._id });
+
+    const razorpayPaymentId = "pay_test_other_user";
+    const razorpaySignature = crypto
+      .createHmac("sha256", config.RAZORPAY_KEY_SECRET)
+      .update(`${paymentRes.body.razorpayOrderId}|${razorpayPaymentId}`)
+      .digest("hex");
+
+    const response = await request(app)
+      .post("/api/v1/payment/verify")
+      .set("Authorization", `Bearer ${otherUserToken}`)
+      .send({
+        razorpayOrderId: paymentRes.body.razorpayOrderId,
+        razorpayPaymentId,
+        razorpaySignature,
+      });
+
+    expect(response.status).toBe(404);
+
+    const productAfterAttempt = await productModel.findById(product._id);
+    expect(productAfterAttempt.stock).toBe(10);
+  });
+
   test("should verify payment signature", async () => {
     const seller = await createUser({ role: "seller" });
     const buyer = await createUser();
