@@ -91,6 +91,7 @@ productSchema.index({ seller: 1 });
 productSchema.index({ category: 1 });
 productSchema.index({ averageRating: -1 });
 productSchema.index({ createdAt: -1 });
+productSchema.index({ name: 1 });
 
 const productModel = mongoose.model("Product", productSchema);
 
