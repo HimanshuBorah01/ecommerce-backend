@@ -3,6 +3,7 @@ import productModel from "../models/product.model.js";
 import { uploadFile, deleteFile } from "../services/storage.service.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
+import productSearchService from "../services/productSearch.service.js";
 
 // all seller controllers
 // create products
@@ -180,6 +181,22 @@ export const getMyProducts = asyncHandler(async (req, res) => {
     success: true,
     count: products.length,
     products,
+  });
+});
+
+// Get autocomplete suggestions
+export const autocompleteProducts = asyncHandler(async (req, res) => {
+  const { q, limit } = req.query;
+
+  const autocompleteSuggestions = await productSearchService.autocomplete({
+    query: q,
+    limit: limit ? Number(limit) : undefined,
+  });
+
+  return res.status(200).json({
+    success: true,
+    count: autocompleteSuggestions.length,
+    suggestions: autocompleteSuggestions,
   });
 });
 

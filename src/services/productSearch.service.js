@@ -15,7 +15,7 @@ class ProductSearchService {
     }
 
     // Remove leading and trailing spaces and normalize case
-    const searchQuery = query.trim().toLowerCase();
+    const searchQuery = query.trim();
 
     // Minimum query length
     if (searchQuery.length < MIN_SEARCH_QUERY_LENGTH) {
@@ -43,6 +43,7 @@ class ProductSearchService {
       "\\$&",
     );
 
+    // Search matching products by name or category.
     const products = await Product.find({
       $or: [
         {
@@ -70,6 +71,7 @@ class ProductSearchService {
       return [];
     }
 
+    // Keep category suggestions unique.
     const categorySuggestions = [];
     const seenCategories = new Set();
 
@@ -79,7 +81,7 @@ class ProductSearchService {
         seenCategories.add(product.category);
 
         categorySuggestions.push({
-          _id: `category_${product.category.toLowerCase().replace(/\s+/g, "_")}`,
+          _id: null,
           name: product.category,
           type: "category",
         });

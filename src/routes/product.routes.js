@@ -12,6 +12,7 @@ import {
   addReview,
   updateReview,
   deleteReview,
+  autocompleteProducts,
 } from "../controllers/product.controller.js";
 import { protect, authorize } from "../middleware/auth.middleware.js";
 import {
@@ -81,6 +82,10 @@ router.get(
 );
 
 // public product routes
+
+// GET /api/v1/products/autocomplete?q=iph
+router.get("/autocomplete", autocompleteProducts);
+
 // GET /api/v1/products     //All products
 // GET /api/v1/products?search=iphone     //Search
 // GET /api/v1/products?category=Electronics    //Category only
