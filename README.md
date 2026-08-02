@@ -44,24 +44,24 @@ npm start
 
 ## Environment Variables
 
-| Name | Required | Description |
-| --- | --- | --- |
-| `PORT` | Yes | Server port. Example: `3000` |
-| `NODE_ENV` | Yes | Use `development`, `test`, or `production` |
-| `CLIENT_URL` | Yes | Frontend URL allowed by CORS |
-| `DB_URL` | Yes | MongoDB connection string |
-| `REDIS_URL` | Yes | Redis connection string |
-| `JWT_SECRET` | Yes | JWT signing secret. Use at least 32 chars in production |
-| `JWT_ACCESS_TOKEN_EXPIRES_IN` | Yes | Access token expiry. Example: `15m` |
-| `JWT_REFRESH_TOKEN_EXPIRES_IN` | Yes | Refresh token expiry. Example: `30d` |
-| `IMAGEKIT_PRIVATE_KEY` | Yes | ImageKit private API key |
-| `RAZORPAY_KEY_ID` | Yes | Razorpay key ID |
-| `RAZORPAY_KEY_SECRET` | Yes | Razorpay key secret |
-| `SMTP_HOST` | Yes | SMTP server host |
-| `SMTP_PORT` | Yes | SMTP server port. Use `465` for secure SMTP |
-| `SMTP_USER` | Yes | SMTP username |
-| `SMTP_PASS` | Yes | SMTP password or app password |
-| `SMTP_FROM` | Yes | Email sender address |
+| Name                           | Required | Description                                             |
+| ------------------------------ | -------- | ------------------------------------------------------- |
+| `PORT`                         | Yes      | Server port. Example: `3000`                            |
+| `NODE_ENV`                     | Yes      | Use `development`, `test`, or `production`              |
+| `CLIENT_URL`                   | Yes      | Frontend URL allowed by CORS                            |
+| `DB_URL`                       | Yes      | MongoDB connection string                               |
+| `REDIS_URL`                    | Yes      | Redis connection string                                 |
+| `JWT_SECRET`                   | Yes      | JWT signing secret. Use at least 32 chars in production |
+| `JWT_ACCESS_TOKEN_EXPIRES_IN`  | Yes      | Access token expiry. Example: `15m`                     |
+| `JWT_REFRESH_TOKEN_EXPIRES_IN` | Yes      | Refresh token expiry. Example: `30d`                    |
+| `IMAGEKIT_PRIVATE_KEY`         | Yes      | ImageKit private API key                                |
+| `RAZORPAY_KEY_ID`              | Yes      | Razorpay key ID                                         |
+| `RAZORPAY_KEY_SECRET`          | Yes      | Razorpay key secret                                     |
+| `SMTP_HOST`                    | Yes      | SMTP server host                                        |
+| `SMTP_PORT`                    | Yes      | SMTP server port. Use `465` for secure SMTP             |
+| `SMTP_USER`                    | Yes      | SMTP username                                           |
+| `SMTP_PASS`                    | Yes      | SMTP password or app password                           |
+| `SMTP_FROM`                    | Yes      | Email sender address                                    |
 
 ## External Services
 
@@ -90,6 +90,7 @@ GET /health
 ```txt
 POST /api/v1/auth/register
 POST /api/v1/auth/login
+POST /api/v1/auth/refresh-token
 POST /api/v1/auth/refresh
 POST /api/v1/auth/logout
 POST /api/v1/auth/logout-all
@@ -106,10 +107,13 @@ GET  /api/v1/auth/me
 ```txt
 GET    /api/v1/products
 GET    /api/v1/products/:id
+GET    /api/v1/products/autocomplete?q=<term>
 POST   /api/v1/products
+POST   /api/v1/products/create
 PUT    /api/v1/products/:id
 DELETE /api/v1/products/:id
 GET    /api/v1/products/my-products
+GET    /api/v1/products/my-products/:id
 POST   /api/v1/products/:id/reviews
 PUT    /api/v1/products/:id/reviews
 DELETE /api/v1/products/:id/reviews
@@ -119,7 +123,9 @@ DELETE /api/v1/products/:id/reviews
 
 ```txt
 POST   /api/v1/cart
+POST   /api/v1/cart/add
 GET    /api/v1/cart
+PUT    /api/v1/cart
 PUT    /api/v1/cart/:id
 DELETE /api/v1/cart/:id
 ```
@@ -129,6 +135,7 @@ DELETE /api/v1/cart/:id
 ```txt
 POST /api/v1/orders
 GET  /api/v1/orders
+GET  /api/v1/orders/my-orders
 GET  /api/v1/orders/:id
 PUT  /api/v1/orders/:id/cancel
 GET  /api/v1/orders/seller-orders
@@ -139,6 +146,7 @@ PUT  /api/v1/orders/:id/status
 
 ```txt
 POST /api/v1/payment/order
+POST /api/v1/payment/verify-payment
 POST /api/v1/payment/verify
 ```
 
