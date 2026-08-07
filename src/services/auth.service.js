@@ -22,7 +22,14 @@ class AuthService {
    * Register a new user.
    */
   async register(userData) {
-    const { name, email, phone, password, confirmPassword } = userData;
+    const {
+      name,
+      email,
+      phone,
+      password,
+      confirmPassword,
+      role = "user",
+    } = userData;
 
     // Validate password confirmation
     if (password !== confirmPassword) {
@@ -52,6 +59,7 @@ class AuthService {
       email,
       phone,
       password: hashedPassword,
+      role,
     });
 
     // Generate verification token and send verification email

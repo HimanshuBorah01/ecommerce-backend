@@ -134,9 +134,10 @@ export const updateCartItem = asyncHandler(async (req, res) => {
     });
   }
 
-  if (!cartItem && (productId || id)) {
+  // Prefer an explicit productId to avoid ambiguity.
+  if (!cartItem && productId) {
     cartItem = await cartModel.findOne({
-      product: productId || id,
+      product: productId,
       user: req.user._id,
     });
   }

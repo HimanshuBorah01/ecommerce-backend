@@ -5,6 +5,15 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import productSearchService from "../services/productSearch.service.js";
 
+// Escape regex special characters to prevent ReDoS / unintended patterns.
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Sanitize a pagination param to a safe positive integer, with a fallback.
+const toPositiveInt = (value, fallback) => {
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 ? n : fallback;
+};
+
 // all seller controllers
 // create products
 export const createProduct = asyncHandler(async (req, res) => {
@@ -92,23 +101,38 @@ export const updateProduct = asyncHandler(async (req, res) => {
   const files = req.files;
 
   if (files && files.length > 0) {
-    // Delete old images from cloud storage
-    for (const image of product.images) {
-      await deleteFile(image.fileId);
-    }
-
     const imageUrls = [];
+    const newUploadedFileIds = [];
 
-    for (const file of files) {
-      const result = await uploadFile(file.buffer.toString("base64"));
-
-      imageUrls.push({
-        url: result.url,
-        fileId: result.fileId,
-      });
+    // Upload new images FIRST so the old ones are only removed on success.
+    try {
+      for (const file of files) {
+        const result = await uploadFile(file.buffer.toString("base64"));
+        newUploadedFileIds.push(result.fileId);
+        imageUrls.push({
+          url: result.url,
+          fileId: result.fileId,
+        });
+      }
+    } catch (error) {
+      // Clean up any successfully uploaded images before rethrowing.
+      for (const fileId of newUploadedFileIds) {
+        try {
+          await deleteFile(fileId);
+        } catch {}
+      }
+      throw error;
     }
 
+    // New uploads succeeded, so it is safe to delete the old images.
+    const oldImages = product.images;
     product.images = imageUrls;
+
+    for (const image of oldImages) {
+      try {
+        await deleteFile(image.fileId);
+      } catch {}
+    }
   }
   await product.save(); // saved
 
@@ -213,10 +237,10 @@ export const getAllProducts = asyncHandler(async (req, res) => {
   } = req.query;
   const query = {};
 
-  // search product
-  if (search) {
+  // search product (escape regex special chars to prevent ReDoS)
+  if (search && typeof search === "string") {
     query.name = {
-      $regex: search,
+      $regex: escapeRegex(search.trim()),
       $options: "i",
     };
   }
@@ -224,24 +248,35 @@ export const getAllProducts = asyncHandler(async (req, res) => {
   // search product by category
   if (category) {
     query.category = {
-      $regex: `^${category}$`,
+      $regex: `^${escapeRegex(category).trim()}$`,
       $options: "i",
     };
   }
 
-  // search product by min max price
-  if (minPrice || maxPrice) {
-    query.price = {};
-    if (minPrice) {
-      query.price.$gte = Number(minPrice);
-    }
-    if (maxPrice) {
-      query.price.$lte = Number(maxPrice);
-    }
+  // search product by min max price (handle 0 correctly)
+  const parsedMinPrice = Number(minPrice);
+  const parsedMaxPrice = Number(maxPrice);
+
+  if (
+    minPrice !== undefined &&
+    minPrice !== "" &&
+    Number.isFinite(parsedMinPrice)
+  ) {
+    query.price = query.price || {};
+    query.price.$gte = parsedMinPrice;
+  }
+  if (
+    maxPrice !== undefined &&
+    maxPrice !== "" &&
+    Number.isFinite(parsedMaxPrice)
+  ) {
+    query.price = query.price || {};
+    query.price.$lte = parsedMaxPrice;
   }
 
-  const safeLimit = Math.min(Number(limit), 50);
-  const skip = (Number(page) - 1) * safeLimit;
+  const safeLimit = Math.min(toPositiveInt(limit, 10), 50);
+  const currentPage = toPositiveInt(page, 1);
+  const skip = (currentPage - 1) * safeLimit;
   const totalProducts = await productModel.countDocuments(query);
   const products = await productModel
     .find(query)
@@ -253,7 +288,7 @@ export const getAllProducts = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
     success: true,
-    page: Number(page),
+    page: currentPage,
     limit: safeLimit,
     totalProducts,
     totalPages,

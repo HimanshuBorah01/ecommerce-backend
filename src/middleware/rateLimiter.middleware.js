@@ -9,7 +9,10 @@ export const apiRateLimiter = rateLimit({
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === "test",
+  // Skip rate limiting in development and test so the frontend can iterate
+  // without tripping the in-memory counter (once rate-limited, every retry
+  // fails and keeps the window exhausted).
+  skip: () => ["development", "test"].includes(process.env.NODE_ENV),
 
   message: {
     success: false,
@@ -26,7 +29,7 @@ export const authRateLimiter = rateLimit({
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === "test",
+  skip: () => ["development", "test"].includes(process.env.NODE_ENV),
 
   message: {
     success: false,

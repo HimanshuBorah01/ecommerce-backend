@@ -203,8 +203,33 @@ export const cancelMyOrder = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Order can not be cancelled");
   }
 
-  order.status = "cancelled";
-  await order.save();
+  // Restore product stock that was reduced when the order was placed/paid.
+  const session = await mongoose.startSession();
+
+  try {
+    await session.withTransaction(async () => {
+      for (const item of order.items) {
+        const result = await productModel.updateOne(
+          {
+            _id: item.product,
+          },
+          {
+            $inc: { stock: item.quantity },
+          },
+          { session },
+        );
+
+        if (result.matchedCount !== 1) {
+          throw new ApiError(404, "Product not found");
+        }
+      }
+
+      order.status = "cancelled";
+      await order.save({ session });
+    });
+  } finally {
+    await session.endSession();
+  }
 
   return res.status(200).json({
     success: true,
@@ -215,22 +240,36 @@ export const cancelMyOrder = asyncHandler(async (req, res) => {
 
 // get seller orders
 export const getSellerOrders = asyncHandler(async (req, res) => {
-  const orders = await orderModel.find().populate({
-    path: "items.product",
-    match: {
-      seller: req.user._id,
-    },
-  });
+  // Find all product IDs owned by this seller, then query only orders that
+  // contain at least one of those products. This keeps the query at the DB
+  // level instead of loading every order in the collection.
+  const sellerProductIds = await productModel
+    .find({ seller: req.user._id }, { _id: 1 })
+    .lean();
 
-  // finding the ordered product
-  const sellerOrders = orders.filter((order) => {
-    return order.items.some((item) => item.product);
-  });
+  const productIdList = sellerProductIds.map((p) => p._id);
+
+  if (productIdList.length === 0) {
+    return res.status(200).json({
+      success: true,
+      count: 0,
+      orders: [],
+    });
+  }
+
+  const orders = await orderModel
+    .find({
+      "items.product": { $in: productIdList },
+    })
+    .populate({
+      path: "items.product",
+      select: "name price images category seller",
+    });
 
   return res.status(200).json({
     success: true,
-    count: sellerOrders.length,
-    orders: sellerOrders,
+    count: orders.length,
+    orders,
   });
 });
 
@@ -260,6 +299,29 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
 
   if (!order) {
     throw new ApiError(404, "Order not found");
+  }
+
+  // Enforce a valid lifecycle: statuses must move forward in sequence.
+  // Allowed transitions map current status to the next status(es) a seller
+  // may set. This prevents jumping straight to "delivered"/"refunded".
+  const allowedTransitions = {
+    confirmed: ["processing", "cancelled"],
+    processing: ["packed", "cancelled"],
+    packed: ["shipped", "cancelled"],
+    shipped: ["out_for_delivery", "cancelled"],
+    out_for_delivery: ["delivered", "cancelled"],
+    delivered: ["returned", "refunded"],
+    returned: ["refunded"],
+    pending: ["confirmed", "cancelled"],
+  };
+
+  const allowed = allowedTransitions[order.status];
+
+  if (!allowed || !allowed.includes(status)) {
+    throw new ApiError(
+      400,
+      `Cannot change order status from "${order.status}" to "${status}"`,
+    );
   }
 
   // seller can only update own orders
