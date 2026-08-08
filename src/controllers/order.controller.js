@@ -174,7 +174,8 @@ export const getMyOrderById = asyncHandler(async (req, res) => {
       _id: id,
       user: req.user._id,
     })
-    .populate("items.product", "name price images category seller");
+    .populate("items.product", "name price images category seller")
+    .populate("address");
 
   if (!order) {
     throw new ApiError(404, "Order not found");
