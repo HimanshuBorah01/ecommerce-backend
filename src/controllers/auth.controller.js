@@ -100,6 +100,7 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
       phone: req.user.phone,
       role: req.user.role,
       isEmailVerified: req.user.isEmailVerified,
+      createdAt: req.user.createdAt,
     },
   });
 });

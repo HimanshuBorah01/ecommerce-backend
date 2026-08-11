@@ -19,11 +19,17 @@ export const normalizeAddressPayload = (req, res, next) => {
   if (req.body.postalCode && !req.body.pinCode) {
     req.body.pinCode = req.body.postalCode;
   }
-  if (!req.body.fullName && req.user?.name) {
-    req.body.fullName = req.user.name;
-  }
-  if (!req.body.phone && req.user?.phone) {
-    req.body.phone = req.user.phone;
+  // Only auto-fill name/phone from the logged-in user on CREATE (POST).
+  // On UPDATE (PUT), intentionally leave the fields untouched so a partial
+  // update like `{ isDefault: true }` does not overwrite the address's
+  // existing name/phone.
+  if (req.method === "POST") {
+    if (!req.body.fullName && req.user?.name) {
+      req.body.fullName = req.user.name;
+    }
+    if (!req.body.phone && req.user?.phone) {
+      req.body.phone = req.user.phone;
+    }
   }
   next();
 };
