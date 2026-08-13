@@ -62,8 +62,10 @@ class AuthService {
       role,
     });
 
-    // Generate verification token and send verification email
-    await emailVerificationService.sendVerificationEmail(user);
+    // Generate verification token and send verification email (non-blocking)
+    emailVerificationService.sendVerificationEmail(user).catch((err) =>
+      console.error("Verification email failed:", err.message),
+    );
 
     const userResponse = user.toObject();
     delete userResponse.password;
