@@ -1,28 +1,28 @@
 import nodemailer from "nodemailer";
 import config from "../config/config.js";
 
-/**
- * Email Service
- */
+const RESEND_API_URL = "https://api.resend.com/emails";
+
 class EmailService {
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: config.SMTP_HOST,
-      port: config.SMTP_PORT,
-      secure: config.SMTP_SECURE,
-      auth: {
-        user: config.SMTP_USER,
-        pass: config.SMTP_PASS,
-      },
-    });
-    if (process.env.NODE_ENV !== "test") {
-      this.verifyConnection();
+    this.useApi = !!config.EMAIL_API_KEY;
+
+    if (!this.useApi) {
+      this.transporter = nodemailer.createTransport({
+        host: config.SMTP_HOST,
+        port: config.SMTP_PORT,
+        secure: config.SMTP_SECURE,
+        auth: {
+          user: config.SMTP_USER,
+          pass: config.SMTP_PASS,
+        },
+      });
+      if (process.env.NODE_ENV !== "test") {
+        this.verifyConnection();
+      }
     }
   }
 
-  /**
-   * Verify SMTP connection during application startup.
-   */
   async verifyConnection() {
     try {
       await this.transporter.verify();
@@ -32,10 +32,39 @@ class EmailService {
     }
   }
 
-  /**
-   * Send an email.
-   */
   async sendEmail({ to, subject, html }) {
+    if (this.useApi) {
+      return this.sendViaApi({ to, subject, html });
+    }
+    return this.sendViaSmtp({ to, subject, html });
+  }
+
+  async sendViaApi({ to, subject, html }) {
+    const payload = {
+      from: config.SMTP_FROM,
+      to,
+      subject,
+      html,
+    };
+
+    const response = await fetch(RESEND_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${config.EMAIL_API_KEY}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Email API error: ${response.status} - ${error}`);
+    }
+
+    return await response.json();
+  }
+
+  async sendViaSmtp({ to, subject, html }) {
     try {
       return await this.transporter.sendMail({
         from: config.SMTP_FROM,
@@ -48,9 +77,6 @@ class EmailService {
     }
   }
 
-  /**
-   * Send password reset email.
-   */
   async sendPasswordResetEmail(email, resetLink) {
     return this.sendEmail({
       to: email,
