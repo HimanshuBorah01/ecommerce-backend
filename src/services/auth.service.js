@@ -81,7 +81,15 @@ class AuthService {
   async login(loginData) {
     const { email, phone, password } = loginData;
 
-    const loginIdentifier = email || phone;
+    const rawIdentifier = email || phone;
+    const loginIdentifier = String(rawIdentifier || "").trim();
+
+    // Frontend sends phone numbers in the `email` field.
+    // Detect and search the correct field.
+    const isPhone = !loginIdentifier.includes("@");
+    const query = isPhone
+      ? { phone: loginIdentifier }
+      : { email: loginIdentifier.toLowerCase() };
 
     // Check if account is temporarily locked
     const isLocked = await loginAttemptService.isLocked(loginIdentifier);
@@ -95,9 +103,7 @@ class AuthService {
 
     // Find user by email or phone
     const user = await userModel
-      .findOne({
-        $or: [{ email }, { phone }],
-      })
+      .findOne(query)
       .select("+password");
 
     if (!user) {

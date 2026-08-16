@@ -81,9 +81,15 @@ export const loginValidationRules = [
   body("email")
     .optional({ checkFalsy: true })
     .trim()
-    .normalizeEmail()
-    .isEmail()
-    .withMessage("Please enter a valid email address"),
+    .custom((value) => {
+      if (!value) return true;
+      if (!value.includes("@")) return true;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value)) {
+        throw new Error("Please enter a valid email address");
+      }
+      return true;
+    }),
 
   body("phone")
     .optional({ checkFalsy: true })
