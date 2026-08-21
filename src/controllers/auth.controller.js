@@ -151,9 +151,9 @@ export const changePassword = asyncHandler(async (req, res) => {
  * Verify email.
  */
 export const verifyEmail = asyncHandler(async (req, res) => {
-  const { token } = req.body;
+  const { otp } = req.body;
 
-  await authService.verifyEmail(token);
+  await authService.verifyEmail(otp);
 
   return res.status(200).json({
     success: true,

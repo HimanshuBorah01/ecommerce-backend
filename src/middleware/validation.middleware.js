@@ -148,7 +148,16 @@ export const resetPasswordValidationRules = [
 ];
 
 export const verifyEmailValidationRules = [
-  body("token").trim().notEmpty().withMessage("Verification token is required"),
+  body("otp")
+    .trim()
+    .notEmpty()
+    .withMessage("OTP is required")
+    .bail()
+    .isLength({ min: 6, max: 6 })
+    .withMessage("OTP must be 6 digits")
+    .bail()
+    .isNumeric()
+    .withMessage("OTP must contain only numbers"),
 
   validateResult,
 ];

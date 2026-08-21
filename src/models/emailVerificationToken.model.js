@@ -9,7 +9,7 @@ const emailVerificationTokenSchema = new mongoose.Schema(
       index: true,
     },
 
-    tokenHash: {
+    otpHash: {
       type: String,
       required: true,
       index: true,
@@ -25,7 +25,6 @@ const emailVerificationTokenSchema = new mongoose.Schema(
   },
 );
 
-// Automatically delete expired verification tokens
 emailVerificationTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 const EmailVerificationToken = mongoose.model(

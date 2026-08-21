@@ -8,8 +8,8 @@ import tokenService from "./token.service.js";
 import sessionService from "./session.service.js";
 import passwordResetTokenService from "./passwordResetToken.service.js";
 import emailService from "./email.service.js";
-import emailVerificationTokenService from "./emailVerificationToken.service.js";
-import emailVerificationService from "./emailVerification.service.js";
+import otpVerificationTokenService from "./otpVerificationToken.service.js";
+import otpVerificationService from "./otpVerification.service.js";
 import loginAttemptService from "./loginAttempt.service.js";
 
 /**
@@ -63,7 +63,7 @@ class AuthService {
     });
 
     // Generate verification token and send verification email (non-blocking)
-    emailVerificationService.sendVerificationEmail(user).catch((err) =>
+    otpVerificationService.sendVerificationEmail(user).catch((err) =>
       console.error("Verification email failed:", err.message),
     );
 
@@ -341,39 +341,32 @@ class AuthService {
   /**
    * Verify user email.
    */
-  async verifyEmail(token) {
-    // Find verification token
-    const verificationToken =
-      await emailVerificationTokenService.findToken(token);
+  async verifyEmail(otp) {
+    const verificationToken = await otpVerificationTokenService.findOtp(otp);
 
     if (!verificationToken) {
-      throw new ApiError(400, "Invalid or expired verification token");
+      throw new ApiError(400, "Invalid or expired OTP");
     }
 
-    // Check expiration
     if (verificationToken.expiresAt < new Date()) {
-      throw new ApiError(400, "Verification token has expired");
+      throw new ApiError(400, "OTP has expired");
     }
 
-    // Find user
     const user = await userModel.findById(verificationToken.user);
 
     if (!user) {
       throw new ApiError(404, "User not found");
     }
 
-    // Email already verified
     if (user.isEmailVerified) {
-      await emailVerificationTokenService.deleteToken(user._id);
+      await otpVerificationTokenService.deleteOtp(user._id);
       return;
     }
 
-    // Mark email as verified
     user.isEmailVerified = true;
     await user.save();
 
-    // Delete verification token
-    await emailVerificationTokenService.deleteToken(user._id);
+    await otpVerificationTokenService.deleteOtp(user._id);
   }
 
   /**
@@ -382,17 +375,15 @@ class AuthService {
   async resendVerificationEmail(email) {
     const user = await userModel.findOne({ email });
 
-    // Don't reveal whether the email exists
     if (!user) {
       return;
     }
 
-    // Already verified
     if (user.isEmailVerified) {
       return;
     }
-    // Send a new verification email
-    await emailVerificationService.sendVerificationEmail(user);
+
+    await otpVerificationService.sendVerificationEmail(user);
   }
 }
 

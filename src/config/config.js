@@ -47,22 +47,6 @@ if (isProduction) {
   }
 }
 
-const emailApiKey = optional("EMAIL_API_KEY");
-const useEmailApi = !!emailApiKey;
-
-const smtpHost = optional("SMTP_HOST");
-const smtpPort = useEmailApi ? optional("SMTP_PORT", "587") : String(number("SMTP_PORT"));
-const smtpUser = optional("SMTP_USER");
-const smtpPass = optional("SMTP_PASS");
-const smtpFrom = optional("SMTP_FROM");
-
-if (!useEmailApi) {
-  required("SMTP_HOST");
-  required("SMTP_USER");
-  required("SMTP_PASS");
-  required("SMTP_FROM");
-}
-
 const config = {
   PORT: port,
   DB_URL: required("DB_URL"),
@@ -80,15 +64,17 @@ const config = {
   IS_PRODUCTION: isProduction,
   CLIENT_URL: clientUrl,
 
-  EMAIL_API_KEY: emailApiKey,
-  USE_EMAIL_API: useEmailApi,
-
-  SMTP_HOST: smtpHost,
-  SMTP_PORT: Number(smtpPort),
-  SMTP_SECURE: Number(smtpPort) === 465,
-  SMTP_USER: smtpUser,
-  SMTP_PASS: smtpPass,
-  SMTP_FROM: smtpFrom,
+  GMAIL_CLIENT_ID: optional("GMAIL_CLIENT_ID"),
+  GMAIL_CLIENT_SECRET: optional("GMAIL_CLIENT_SECRET"),
+  GMAIL_REFRESH_TOKEN: optional("GMAIL_REFRESH_TOKEN"),
+  GMAIL_USER: optional("GMAIL_USER"),
 };
+
+if (nodeEnv !== "test") {
+  required("GMAIL_CLIENT_ID");
+  required("GMAIL_CLIENT_SECRET");
+  required("GMAIL_REFRESH_TOKEN");
+  required("GMAIL_USER");
+}
 
 export default config;
