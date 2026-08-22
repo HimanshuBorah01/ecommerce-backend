@@ -1,11 +1,14 @@
 import request from "supertest";
 import app from "../src/app.js";
+import userModel from "../src/models/user.model.js";
 
 // Helper: register a user and log them in, returning accessToken and cookies
 // Reduces duplication in logout and refresh token tests
 async function registerAndLogin(userData) {
   // Register user
   await request(app).post("/api/v1/auth/register").send(userData);
+
+  await userModel.findOneAndUpdate({ email: userData.email }, { isEmailVerified: true });
 
   // Login and return the relevant tokens/cookies
   const loginResponse = await request(app).post("/api/v1/auth/login").send({
@@ -152,6 +155,8 @@ describe("Authentication API", () => {
       // Register user first
       await request(app).post("/api/v1/auth/register").send(userData);
 
+      await userModel.findOneAndUpdate({ email: userData.email }, { isEmailVerified: true });
+
       // Login
       const response = await request(app)
         .post("/api/v1/auth/login")
@@ -173,6 +178,8 @@ describe("Authentication API", () => {
 
       // Register user first
       await request(app).post("/api/v1/auth/register").send(userData);
+
+      await userModel.findOneAndUpdate({ email: userData.email }, { isEmailVerified: true });
 
       // Try login with incorrect password
       const response = await request(app)

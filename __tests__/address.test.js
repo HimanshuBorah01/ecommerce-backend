@@ -18,6 +18,7 @@ async function createUser({ role = "user" } = {}) {
     phone: makeRandomPhone(),
     password: await passwordService.hashPassword(password),
     role,
+    isEmailVerified: true,
   }).then((user) => ({ user, email: user.email, password }));
 }
 

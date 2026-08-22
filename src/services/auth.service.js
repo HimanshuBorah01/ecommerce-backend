@@ -126,6 +126,10 @@ class AuthService {
       throw new ApiError(403, "Account is inactive");
     }
 
+    if (!user.isEmailVerified) {
+      throw new ApiError(403, "Please verify your email before logging in");
+    }
+
     // Clear failed login attempts after successful authentication
     await loginAttemptService.clearAttempts(loginIdentifier);
 
