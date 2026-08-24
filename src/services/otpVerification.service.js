@@ -1,4 +1,3 @@
-import config from "../config/config.js";
 import emailService from "./email.service.js";
 import otpVerificationTokenService from "./otpVerificationToken.service.js";
 
