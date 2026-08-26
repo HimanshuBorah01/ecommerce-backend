@@ -79,6 +79,15 @@ const orderSchema = mongoose.Schema(
     paidAt: {
       type: Date,
     },
+
+    deliveredAt: {
+      type: Date,
+    },
+
+    returnReason: {
+      type: String,
+      trim: true,
+    },
   },
 
   {

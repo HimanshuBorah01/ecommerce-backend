@@ -6,6 +6,7 @@ import {
   getSellerOrders,
   getMyOrderById,
   cancelMyOrder,
+  returnMyOrder,
   updateOrderStatus,
 } from "../controllers/order.controller.js";
 import { protect, authorize } from "../middleware/auth.middleware.js";
@@ -34,6 +35,15 @@ router.get("/:id", protect, authorize(ROLES.USER), getMyOrderById);
 //cancel my order
 // PUT /api/v1/orders/:id/cancel
 router.put("/:id/cancel", protect, authorize(ROLES.USER), cancelMyOrder);
+
+// return my order
+// PUT /api/v1/orders/:id/return
+router.put(
+  "/:id/return",
+  protect,
+  authorize(ROLES.USER),
+  returnMyOrder,
+);
 
 // update order status by seller
 // PUT /api/v1/orders/:id/status

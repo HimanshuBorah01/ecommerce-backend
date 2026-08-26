@@ -200,7 +200,14 @@ export const cancelMyOrder = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Order not found ");
   }
 
-  if (order.status !== "pending" && order.status !== "confirmed") {
+  const cancellableStatuses = [
+    "pending",
+    "confirmed",
+    "processing",
+    "packed",
+  ];
+
+  if (!cancellableStatuses.includes(order.status)) {
     throw new ApiError(400, "Order can not be cancelled");
   }
 
@@ -235,6 +242,91 @@ export const cancelMyOrder = asyncHandler(async (req, res) => {
   return res.status(200).json({
     success: true,
     message: "Order cancelled successfully",
+    order,
+  });
+});
+
+// return my order (only for delivered orders within 7 days)
+export const returnMyOrder = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  const order = await orderModel.findOne({
+    _id: id,
+    user: req.user._id,
+  });
+
+  if (!order) {
+    throw new ApiError(404, "Order not found");
+  }
+
+  if (order.status !== "delivered") {
+    throw new ApiError(
+      400,
+      "Only delivered orders can be returned",
+    );
+  }
+
+  if (!order.deliveredAt) {
+    if (order.updatedAt) {
+      order.deliveredAt = order.updatedAt;
+    } else {
+      throw new ApiError(
+        400,
+        "Delivery date is not recorded for this order",
+      );
+    }
+  }
+
+  const daysSinceDelivery = Math.floor(
+    (Date.now() - new Date(order.deliveredAt).getTime()) /
+      (1000 * 60 * 60 * 24),
+  );
+
+  if (daysSinceDelivery > 7) {
+    throw new ApiError(
+      400,
+      `Return window has expired. Orders can only be returned within 7 days of delivery (${daysSinceDelivery} days ago)`,
+    );
+  }
+
+  if (!reason || reason.trim().length < 3) {
+    throw new ApiError(400, "Please provide a valid return reason");
+  }
+
+  // Restore product stock
+  const session = await mongoose.startSession();
+
+  try {
+    await session.withTransaction(async () => {
+      for (const item of order.items) {
+        const result = await productModel.updateOne(
+          {
+            _id: item.product,
+          },
+          {
+            $inc: { stock: item.quantity },
+          },
+          { session },
+        );
+
+        if (result.matchedCount !== 1) {
+          throw new ApiError(404, "Product not found");
+        }
+      }
+
+      order.status = "returned";
+      order.returnReason = reason.trim();
+      await order.save({ session });
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  return res.status(200).json({
+    success: true,
+    message:
+      "Return request submitted successfully. Your items will be picked up soon.",
     order,
   });
 });
@@ -341,6 +433,9 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   if (order.paymentMethod === "cod" && status === "delivered") {
     order.paymentStatus = "paid";
     order.paidAt = new Date();
+  }
+  if (status === "delivered") {
+    order.deliveredAt = new Date();
   }
 
   await order.save();
