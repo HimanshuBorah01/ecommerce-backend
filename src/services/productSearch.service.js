@@ -92,6 +92,7 @@ class ProductSearchService {
     const productSuggestions = products.map((product) => ({
       _id: product._id,
       name: product.name,
+      category: product.category,
       type: "product",
     }));
 
