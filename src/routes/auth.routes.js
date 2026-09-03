@@ -6,6 +6,7 @@ import {
   resetPasswordValidationRules,
   changePasswordValidationRules,
   verifyEmailValidationRules,
+  updateProfileValidationRules,
 } from "../middleware/validation.middleware.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { authRateLimiter } from "../middleware/rateLimiter.middleware.js";
@@ -17,6 +18,7 @@ import {
   logoutAllDevices,
   refreshToken,
   getCurrentUser,
+  updateProfile,
   forgotPassword,
   resetPassword,
   changePassword,
@@ -95,5 +97,21 @@ router.post(
 // Get current authenticated user
 // GET /api/v1/auth/me
 router.get("/me", protect, getCurrentUser);
+router.get("/profile", protect, getCurrentUser);
+
+// Update current authenticated user's profile
+// PATCH /api/v1/auth/me
+router.patch(
+  "/me",
+  protect,
+  updateProfileValidationRules,
+  updateProfile,
+);
+router.patch(
+  "/profile",
+  protect,
+  updateProfileValidationRules,
+  updateProfile,
+);
 
 export default router;

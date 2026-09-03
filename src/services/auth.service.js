@@ -246,6 +246,50 @@ class AuthService {
   }
 
   /**
+   * Update the authenticated user's profile (name, phone).
+   */
+  async updateProfile(userId, updates) {
+    const { name, phone } = updates;
+
+    if (!name && !phone) {
+      throw new ApiError(400, "Please provide at least one field to update");
+    }
+
+    const user = await userModel.findById(userId);
+
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    if (name) user.name = name;
+
+    if (phone) {
+      const existing = await userModel.findOne({
+        phone,
+        _id: { $ne: userId },
+      });
+      if (existing) {
+        throw new ApiError(409, "Phone number already in use");
+      }
+      user.phone = phone;
+    }
+
+    const updatedUser = await user.save();
+
+    return {
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        role: updatedUser.role,
+        isEmailVerified: updatedUser.isEmailVerified,
+        createdAt: updatedUser.createdAt,
+      },
+    };
+  }
+
+  /**
    * Forgot password.
    */
   async forgotPassword(email) {

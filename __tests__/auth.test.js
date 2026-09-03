@@ -300,4 +300,129 @@ describe("Authentication API", () => {
       expect(response.status).toBe(401);
     });
   });
+
+  // Profile update tests
+  describe("Update Profile", () => {
+    test("should update name and phone successfully", async () => {
+      const userData = {
+        name: "John Doe",
+        email: `john-${Date.now()}@example.com`,
+        phone: `9${Math.floor(100000000 + Math.random() * 900000000)}`,
+        password: "Password@123",
+        confirmPassword: "Password@123",
+      };
+
+      const { accessToken, cookies } = await registerAndLogin(userData);
+
+      const response = await request(app)
+        .patch("/api/v1/auth/me")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .set("Cookie", cookies)
+        .send({ name: "Jane Doe", phone: "9123456789" });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.user.name).toBe("Jane Doe");
+      expect(response.body.user.phone).toBe("9123456789");
+    });
+
+    test("should update only name", async () => {
+      const userData = {
+        name: "John Doe",
+        email: `john-${Date.now()}@example.com`,
+        phone: `9${Math.floor(100000000 + Math.random() * 900000000)}`,
+        password: "Password@123",
+        confirmPassword: "Password@123",
+      };
+
+      const { accessToken, cookies } = await registerAndLogin(userData);
+
+      const response = await request(app)
+        .patch("/api/v1/auth/me")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .set("Cookie", cookies)
+        .send({ name: "Jane Doe" });
+
+      expect(response.status).toBe(200);
+      expect(response.body.user.name).toBe("Jane Doe");
+      expect(response.body.user.phone).toBe(userData.phone);
+    });
+
+    test("should reject update with no fields provided", async () => {
+      const userData = {
+        name: "John Doe",
+        email: `john-${Date.now()}@example.com`,
+        phone: `9${Math.floor(100000000 + Math.random() * 900000000)}`,
+        password: "Password@123",
+        confirmPassword: "Password@123",
+      };
+
+      const { accessToken, cookies } = await registerAndLogin(userData);
+
+      const response = await request(app)
+        .patch("/api/v1/auth/me")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .set("Cookie", cookies)
+        .send({});
+
+      expect(response.status).toBe(400);
+    });
+
+    test("should reject update with invalid phone number", async () => {
+      const userData = {
+        name: "John Doe",
+        email: `john-${Date.now()}@example.com`,
+        phone: `9${Math.floor(100000000 + Math.random() * 900000000)}`,
+        password: "Password@123",
+        confirmPassword: "Password@123",
+      };
+
+      const { accessToken, cookies } = await registerAndLogin(userData);
+
+      const response = await request(app)
+        .patch("/api/v1/auth/me")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .set("Cookie", cookies)
+        .send({ phone: "123" });
+
+      expect(response.status).toBe(400);
+    });
+
+    test("should reject update when phone is taken by another user", async () => {
+      const existingPhone = "9988776655";
+      await request(app).post("/api/v1/auth/register").send({
+        name: "Existing User",
+        email: `existing-${Date.now()}@example.com`,
+        phone: existingPhone,
+        password: "Password@123",
+        confirmPassword: "Password@123",
+      });
+
+      const userData = {
+        name: "John Doe",
+        email: `john-${Date.now()}@example.com`,
+        phone: `9${Math.floor(100000000 + Math.random() * 900000000)}`,
+        password: "Password@123",
+        confirmPassword: "Password@123",
+      };
+
+      const { accessToken, cookies } = await registerAndLogin(userData);
+
+      const response = await request(app)
+        .patch("/api/v1/auth/me")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .set("Cookie", cookies)
+        .send({ phone: existingPhone });
+
+      expect(response.status).toBe(409);
+    });
+
+    test("should not update profile without authentication", async () => {
+      const response = await request(app)
+        .patch("/api/v1/auth/me")
+        .send({ name: "Jane Doe" });
+
+      expect(response.status).toBe(401);
+    });
+  });
 });

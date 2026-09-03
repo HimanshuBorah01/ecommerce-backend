@@ -106,6 +106,19 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Update the current authenticated user's profile.
+ */
+export const updateProfile = asyncHandler(async (req, res) => {
+  const { user } = await authService.updateProfile(req.user._id, req.body);
+
+  return res.status(200).json({
+    success: true,
+    message: "Profile updated successfully",
+    user,
+  });
+});
+
+/**
  * Forgot password.
  */
 export const forgotPassword = asyncHandler(async (req, res) => {

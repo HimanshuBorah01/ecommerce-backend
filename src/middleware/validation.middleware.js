@@ -109,6 +109,29 @@ export const loginValidationRules = [
   validateResult,
 ];
 
+export const updateProfileValidationRules = [
+  body("name")
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage("Name must be between 2 and 50 characters"),
+
+  body("phone")
+    .optional()
+    .trim()
+    .matches(/^[6-9]\d{9}$/)
+    .withMessage("Please enter a valid Indian mobile number"),
+
+  body().custom((value) => {
+    if (!value.name && !value.phone) {
+      throw new Error("Please provide at least one field to update");
+    }
+    return true;
+  }),
+
+  validateResult,
+];
+
 export const changePasswordValidationRules = [
   body("currentPassword")
     .notEmpty()
