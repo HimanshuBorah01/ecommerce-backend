@@ -377,3 +377,16 @@ export const updateCartValidationRules = [
 
   validateResult,
 ];
+
+export const subscribeValidationRules = [
+  body("email")
+    .trim()
+    .normalizeEmail()
+    .notEmpty()
+    .withMessage("Email is required")
+    .bail()
+    .isEmail()
+    .withMessage("Please enter a valid email address"),
+
+  validateResult,
+];
