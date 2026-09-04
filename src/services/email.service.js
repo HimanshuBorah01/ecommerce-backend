@@ -114,7 +114,7 @@ class EmailService {
           </tr>
           <tr>
             <td align="center">
-              <a href="https://shopy.in" style="display:inline-block;background:#FF5A1F;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 28px;border-radius:8px;font-size:15px;">Start Shopping</a>
+              <a href="https://ecommerce-frontend-two-ruby.vercel.app/" style="display:inline-block;background:#FF5A1F;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 28px;border-radius:8px;font-size:15px;">Start Shopping</a>
             </td>
           </tr>
           <tr>
