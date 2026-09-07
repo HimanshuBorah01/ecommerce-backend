@@ -44,6 +44,13 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    notificationSettings: {
+      orderUpdates: { type: Boolean, default: true },
+      promotions: { type: Boolean, default: true },
+      newsletter: { type: Boolean, default: true },
+      priceDrops: { type: Boolean, default: false },
+      newArrivals: { type: Boolean, default: true },
+    },
   },
   {
     timestamps: true,
