@@ -13,6 +13,7 @@ export const createAddress = asyncHandler(async (req, res) => {
     state,
     pinCode,
     country,
+    addressType,
     isDefault,
   } = req.body;
 
@@ -38,6 +39,7 @@ export const createAddress = asyncHandler(async (req, res) => {
     state,
     pinCode,
     country,
+    addressType,
     isDefault,
   });
 
@@ -112,6 +114,7 @@ export const updateMyAddress = asyncHandler(async (req, res) => {
     state,
     pinCode,
     country,
+    addressType,
     isDefault,
   } = req.body;
 
@@ -123,6 +126,7 @@ export const updateMyAddress = asyncHandler(async (req, res) => {
   if (state) address.state = state;
   if (pinCode) address.pinCode = pinCode;
   if (country) address.country = country;
+  if (addressType) address.addressType = addressType;
   // Ensure only one default address per user
   if (isDefault === true) {
     await addressModel.updateMany(

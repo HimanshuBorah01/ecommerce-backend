@@ -225,6 +225,11 @@ export const createAddressValidationRules = [
     .notEmpty()
     .withMessage("Country cannot be empty"),
 
+  body("addressType")
+    .optional()
+    .isIn(["home", "work", "other"])
+    .withMessage("Address type must be one of: home, work, other"),
+
   body("isDefault")
     .optional()
     .isBoolean()
@@ -245,6 +250,11 @@ export const updateAddressValidationRules = [
     .trim()
     .matches(/^[6-9]\d{9}$/)
     .withMessage("Please enter a valid Indian mobile number"),
+
+  body("addressType")
+    .optional()
+    .isIn(["home", "work", "other"])
+    .withMessage("Address type must be one of: home, work, other"),
 
   body("pinCode")
     .optional()

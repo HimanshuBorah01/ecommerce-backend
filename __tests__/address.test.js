@@ -47,6 +47,7 @@ describe("Address API", () => {
         state: "NY",
         postalCode: "10001",
         country: "USA",
+        addressType: "home",
         isDefault: true,
       });
 
@@ -67,6 +68,7 @@ describe("Address API", () => {
         state: "NY",
         postalCode: "10001",
         country: "USA",
+        addressType: "home",
         isDefault: true,
       });
 
@@ -93,6 +95,7 @@ describe("Address API", () => {
         state: "NY",
         postalCode: "10001",
         country: "USA",
+        addressType: "home",
         isDefault: true,
       });
 
@@ -107,6 +110,7 @@ describe("Address API", () => {
         state: "CA",
         postalCode: "90001",
         country: "USA",
+        addressType: "work",
       });
 
     expect(response.status).toBe(200);
@@ -126,6 +130,7 @@ describe("Address API", () => {
         state: "NY",
         postalCode: "10001",
         country: "USA",
+        addressType: "home",
         isDefault: true,
       });
 
@@ -138,5 +143,25 @@ describe("Address API", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
+  });
+
+  test("should reject invalid address type", async () => {
+    const user = await createUser();
+    const accessToken = await loginUser(user.email, user.password);
+
+    const response = await request(app)
+      .post("/api/v1/addresses")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        street: "123 Main Street",
+        city: "New York",
+        state: "NY",
+        postalCode: "10001",
+        country: "USA",
+        addressType: "invalid_type",
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
   });
 });
