@@ -1,5 +1,58 @@
 import mongoose from "mongoose";
 
+const shippingAddressSchema = new mongoose.Schema(
+  {
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    phone: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    addressLine1: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    addressLine2: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    city: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    state: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    pinCode: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    country: {
+      type: String,
+      required: true,
+      default: "India",
+      trim: true,
+    },
+    addressType: {
+      type: String,
+      enum: ["home", "work", "other"],
+      default: "home",
+      trim: true,
+    },
+  },
+  { _id: false },
+);
+
 const orderSchema = mongoose.Schema(
   {
     user: {
@@ -62,6 +115,10 @@ const orderSchema = mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Address",
       required: true,
+    },
+
+    shippingAddress: {
+      type: shippingAddressSchema,
     },
 
     paymentMethod: {

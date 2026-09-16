@@ -1,6 +1,8 @@
 import request from "supertest";
 import app from "../src/app.js";
 import userModel from "../src/models/user.model.js";
+import addressModel from "../src/models/address.model.js";
+import orderModel from "../src/models/order.model.js";
 import passwordService from "../src/services/password.service.js";
 
 // address.test.js - Integration tests for address endpoints
@@ -143,6 +145,64 @@ describe("Address API", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
+  });
+
+  test("should preserve an address snapshot on linked orders when deleting", async () => {
+    const user = await createUser();
+    const accessToken = await loginUser(user.email, user.password);
+
+    const createRes = await request(app)
+      .post("/api/v1/addresses")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        street: "123 Main Street",
+        city: "New York",
+        state: "NY",
+        postalCode: "10001",
+        country: "USA",
+        addressType: "home",
+        isDefault: true,
+      });
+
+    const addressId = createRes.body.address._id;
+    const order = await orderModel.create({
+      user: user.user._id,
+      items: [],
+      totalAmount: 0,
+      address: addressId,
+      paymentMethod: "cod",
+      status: "delivered",
+      paymentStatus: "paid",
+    });
+
+    const response = await request(app)
+      .delete(`/api/v1/addresses/${addressId}`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({});
+
+    expect(response.status).toBe(200);
+    expect(await addressModel.findById(addressId)).toBeNull();
+
+    const savedOrder = await orderModel.findById(order._id);
+    expect(savedOrder.shippingAddress).toMatchObject({
+      fullName: "Test User",
+      addressLine1: "123 Main Street",
+      city: "New York",
+      state: "NY",
+      pinCode: "10001",
+      country: "USA",
+      addressType: "home",
+    });
+
+    const orderResponse = await request(app)
+      .get(`/api/v1/orders/${order._id}`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({});
+
+    expect(orderResponse.status).toBe(200);
+    expect(orderResponse.body.order.shippingAddress.addressLine1).toBe(
+      "123 Main Street",
+    );
   });
 
   test("should reject invalid address type", async () => {

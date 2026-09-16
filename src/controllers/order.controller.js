@@ -34,6 +34,18 @@ export const createOrder = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Address not found");
       }
 
+      const shippingAddress = {
+        fullName: address.fullName,
+        phone: address.phone,
+        addressLine1: address.addressLine1,
+        addressLine2: address.addressLine2,
+        city: address.city,
+        state: address.state,
+        pinCode: address.pinCode,
+        country: address.country,
+        addressType: address.addressType,
+      };
+
       // find the cart items first and populate
       const cartItems = await cartModel
         .find({
@@ -76,6 +88,7 @@ export const createOrder = asyncHandler(async (req, res) => {
             items,
             totalAmount,
             address: addressId,
+            shippingAddress,
             paymentMethod,
           },
         ],
@@ -156,7 +169,8 @@ export const getMyOrder = asyncHandler(async (req, res) => {
     .find({
       user: req.user._id,
     })
-    .populate("items.product", "name price images category seller");
+    .populate("items.product", "name price images category seller")
+    .populate("address");
 
   return res.status(200).json({
     success: true,

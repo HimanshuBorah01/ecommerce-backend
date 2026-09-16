@@ -1,4 +1,6 @@
+import mongoose from "mongoose";
 import addressModel from "../models/address.model.js";
+import orderModel from "../models/order.model.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 
@@ -164,7 +166,41 @@ export const deleteMyAddress = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Address not found");
   }
 
-  await address.deleteOne();
+  const shippingAddress = {
+    fullName: address.fullName,
+    phone: address.phone,
+    addressLine1: address.addressLine1,
+    addressLine2: address.addressLine2,
+    city: address.city,
+    state: address.state,
+    pinCode: address.pinCode,
+    country: address.country,
+    addressType: address.addressType,
+  };
+
+  const session = await mongoose.startSession();
+
+  try {
+    await session.withTransaction(async () => {
+      await orderModel.updateMany(
+        {
+          user: req.user._id,
+          address: address._id,
+          shippingAddress: { $exists: false },
+        },
+        {
+          $set: {
+            shippingAddress,
+          },
+        },
+        { session },
+      );
+
+      await address.deleteOne({ session });
+    });
+  } finally {
+    await session.endSession();
+  }
 
   return res.status(200).json({
     success: true,

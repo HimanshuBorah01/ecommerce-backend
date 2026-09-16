@@ -88,6 +88,14 @@ describe("Order API", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
+    expect(response.body.order.shippingAddress).toMatchObject({
+      fullName: "Test User",
+      addressLine1: "123 Main Street",
+      city: "New York",
+      state: "NY",
+      pinCode: "10001",
+      country: "USA",
+    });
 
     const productAfterOrder = await productModel.findById(product._id);
     expect(productAfterOrder.stock).toBe(20);
