@@ -232,6 +232,7 @@ export const getAllProducts = asyncHandler(async (req, res) => {
     category,
     minPrice,
     maxPrice,
+    id,
     page = 1,
     limit = 10,
   } = req.query;
@@ -251,6 +252,11 @@ export const getAllProducts = asyncHandler(async (req, res) => {
       $regex: `^${escapeRegex(category).trim()}$`,
       $options: "i",
     };
+  }
+
+  // search product by id
+  if (id) {
+    query._id = id;
   }
 
   // search product by min max price (handle 0 correctly)
