@@ -119,6 +119,40 @@ describe("Address API", () => {
     expect(response.body.success).toBe(true);
   });
 
+  test("should partially update an address via PATCH without wiping fields", async () => {
+    const user = await createUser();
+    const accessToken = await loginUser(user.email, user.password);
+
+    const createRes = await request(app)
+      .post("/api/v1/addresses")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        street: "123 Main Street",
+        city: "New York",
+        state: "NY",
+        postalCode: "10001",
+        country: "USA",
+        addressType: "home",
+        isDefault: true,
+      });
+
+    const addressId = createRes.body.address._id;
+
+    const response = await request(app)
+      .patch(`/api/v1/addresses/${addressId}`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ isDefault: false });
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.address.isDefault).toBe(false);
+    // Partial update must not wipe untouched fields.
+    expect(response.body.address.fullName).toBe("Test User");
+    expect(response.body.address.addressLine1).toBe("123 Main Street");
+    expect(response.body.address.city).toBe("New York");
+    expect(response.body.address.pinCode).toBe("10001");
+  });
+
   test("should delete an address", async () => {
     const user = await createUser();
     const accessToken = await loginUser(user.email, user.password);
