@@ -251,16 +251,46 @@ export const updateAddressValidationRules = [
     .matches(/^[6-9]\d{9}$/)
     .withMessage("Please enter a valid Indian mobile number"),
 
-  body("addressType")
+  body("addressLine1")
     .optional()
-    .isIn(["home", "work", "other"])
-    .withMessage("Address type must be one of: home, work, other"),
+    .trim()
+    .isLength({ min: 1, max: 255 })
+    .withMessage("Address Line 1 must be between 1 and 255 characters"),
+
+  body("addressLine2")
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 255 })
+    .withMessage("Address Line 2 cannot exceed 255 characters"),
+
+  body("city")
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage("City must be between 2 and 100 characters"),
+
+  body("state")
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage("State must be between 2 and 100 characters"),
 
   body("pinCode")
     .optional()
     .trim()
     .matches(/^[A-Za-z0-9 -]{3,10}$/)
     .withMessage("Postal code must be valid"),
+
+  body("country")
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage("Country cannot exceed 100 characters"),
+
+  body("addressType")
+    .optional()
+    .isIn(["home", "work", "other"])
+    .withMessage("Address type must be one of: home, work, other"),
 
   body("isDefault")
     .optional()

@@ -123,7 +123,9 @@ export const updateMyAddress = asyncHandler(async (req, res) => {
   if (fullName) address.fullName = fullName;
   if (phone) address.phone = phone;
   if (addressLine1) address.addressLine1 = addressLine1;
-  if (addressLine2 !== undefined) address.addressLine2 = addressLine2;
+  if (addressLine2 !== undefined) {
+    address.addressLine2 = addressLine2 === null ? "" : addressLine2;
+  }
   if (city) address.city = city;
   if (state) address.state = state;
   if (pinCode) address.pinCode = pinCode;
