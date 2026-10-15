@@ -159,6 +159,7 @@ POST   /api/v1/addresses
 GET    /api/v1/addresses
 GET    /api/v1/addresses/:id
 PUT    /api/v1/addresses/:id
+PATCH  /api/v1/addresses/:id
 DELETE /api/v1/addresses/:id
 ```
 
