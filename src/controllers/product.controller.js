@@ -160,7 +160,9 @@ export const deleteMyProduct = asyncHandler(async (req, res) => {
 
   // delete data from cloud storage service
   for (const image of product.images) {
-    await deleteFile(image.fileId);
+    try {
+      await deleteFile(image.fileId);
+    } catch {}
   }
 
   await product.deleteOne(); // delete data from mongoDB
