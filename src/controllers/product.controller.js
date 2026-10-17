@@ -99,6 +99,7 @@ export const updateProduct = asyncHandler(async (req, res) => {
   if (category) product.category = category;
 
   const files = req.files;
+  let oldImages;
 
   if (files && files.length > 0) {
     const imageUrls = [];
@@ -125,16 +126,21 @@ export const updateProduct = asyncHandler(async (req, res) => {
     }
 
     // New uploads succeeded, so it is safe to delete the old images.
-    const oldImages = product.images;
+    oldImages = product.images;
     product.images = imageUrls;
+  }
 
+  await product.save(); // saved
+
+  // Delete old images after successful save so the database is consistent
+  // before cloud storage is mutated. If save fails, old images remain intact.
+  if (files && files.length > 0) {
     for (const image of oldImages) {
       try {
         await deleteFile(image.fileId);
       } catch {}
     }
   }
-  await product.save(); // saved
 
   return res.status(200).json({
     success: true,
