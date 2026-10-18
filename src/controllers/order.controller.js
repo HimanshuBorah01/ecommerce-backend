@@ -97,28 +97,30 @@ export const createOrder = asyncHandler(async (req, res) => {
 
       order = createdOrders[0];
 
-      if (paymentMethod === "cod") {
-        // COD is confirmed now, so update stock and clear cart together.
-        for (const item of cartItems) {
-          const result = await productModel.updateOne(
-            {
-              _id: item.product._id,
-              stock: { $gte: item.quantity },
-            },
-            {
-              $inc: { stock: -item.quantity },
-            },
-            { session },
+      // Reserve stock for both COD and Razorpay orders so stock cannot be
+      // oversold while a Razorpay payment is pending.
+      for (const item of cartItems) {
+        const result = await productModel.updateOne(
+          {
+            _id: item.product._id,
+            stock: { $gte: item.quantity },
+          },
+          {
+            $inc: { stock: -item.quantity },
+          },
+          { session },
+        );
+
+        if (result.modifiedCount !== 1) {
+          throw new ApiError(
+            400,
+            `Insufficient stock for ${item.product.name}`,
           );
-
-          if (result.modifiedCount !== 1) {
-            throw new ApiError(
-              400,
-              `Insufficient stock for ${item.product.name}`,
-            );
-          }
         }
+      }
 
+      if (paymentMethod === "cod") {
+        // COD is confirmed now, so clear cart together with stock reservation.
         await cartModel.deleteMany(
           {
             user: req.user._id,

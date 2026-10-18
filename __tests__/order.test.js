@@ -98,7 +98,7 @@ describe("Order API", () => {
     });
 
     const productAfterOrder = await productModel.findById(product._id);
-    expect(productAfterOrder.stock).toBe(20);
+    expect(productAfterOrder.stock).toBe(19);
   });
 
   test("should reduce stock when creating a COD order", async () => {

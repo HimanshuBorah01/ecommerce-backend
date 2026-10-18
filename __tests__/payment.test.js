@@ -158,7 +158,7 @@ describe("Payment API", () => {
     expect(response.status).toBe(404);
 
     const productAfterAttempt = await productModel.findById(product._id);
-    expect(productAfterAttempt.stock).toBe(10);
+    expect(productAfterAttempt.stock).toBe(9);
   });
 
   test("should verify payment signature", async () => {

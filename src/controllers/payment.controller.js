@@ -5,7 +5,6 @@ import razorpay from "../services/razorpay.service.js";
 import config from "../config/config.js";
 import orderModel from "../models/order.model.js";
 import cartModel from "../models/cart.model.js";
-import productModel from "../models/product.model.js";
 
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
@@ -101,31 +100,8 @@ export const verifyPayment = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Order is not awaiting payment");
       }
 
-      // Payment is valid now, so reduce stock for the ordered products.
-      for (const item of order.items) {
-        const product = await productModel
-          .findById(item.product)
-          .session(session);
-
-        if (!product) {
-          throw new ApiError(404, "Product not found");
-        }
-
-        const result = await productModel.updateOne(
-          {
-            _id: item.product,
-            stock: { $gte: item.quantity },
-          },
-          {
-            $inc: { stock: -item.quantity },
-          },
-          { session },
-        );
-
-        if (result.modifiedCount !== 1) {
-          throw new ApiError(400, `Insufficient stock for ${product.name}`);
-        }
-      }
+      // Stock was already reserved when the order was created, so no
+      // deduction is needed here. Just confirm the payment.
 
       order.paymentStatus = "paid";
       order.status = "confirmed";
