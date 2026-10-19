@@ -96,6 +96,12 @@ export const verifyPayment = asyncHandler(async (req, res) => {
         return;
       }
 
+      // Allow retrying a failed payment by resetting it to pending.
+      // Other statuses (e.g. refunded) cannot be re-verified.
+      if (order.paymentStatus === "failed") {
+        order.paymentStatus = "pending";
+      }
+
       if (order.paymentStatus !== "pending") {
         throw new ApiError(400, "Order is not awaiting payment");
       }
