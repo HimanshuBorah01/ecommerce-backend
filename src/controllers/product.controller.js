@@ -329,6 +329,45 @@ export const getProductById = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Recompute the cached review stats (numberOfReviews, averageRating) from the
+ * current review list. Uses an aggregation pipeline update so the values are
+ * always derived from the live array and never lost by a concurrent write.
+ */
+const recalcReviewStats = async (productId) => {
+  return productModel.updateOne(
+    { _id: productId },
+    [
+      {
+        $set: {
+          numberOfReviews: { $size: { $ifNull: ["$reviews", []] } },
+          averageRating: {
+            $cond: [
+              { $gt: [{ $size: { $ifNull: ["$reviews", []] } }, 0] },
+              {
+                $divide: [
+                  {
+                    $sum: {
+                      $map: {
+                        input: { $ifNull: ["$reviews", []] },
+                        as: "review",
+                        in: "$$review.rating",
+                      },
+                    },
+                  },
+                  { $size: { $ifNull: ["$reviews", []] } },
+                ],
+              },
+              0,
+            ],
+          },
+        },
+      },
+    ],
+    { updatePipeline: true },
+  );
+};
+
 // add review to product
 export const addReview = asyncHandler(async (req, res) => {
   const { rating, comment = "" } = req.body;
@@ -356,33 +395,38 @@ export const addReview = asyncHandler(async (req, res) => {
     throw new ApiError(400, "You can review only products you have received");
   }
 
-  // check review user === request user
-  const existingReview = product.reviews.find(
-    (review) => review.user.toString() === req.user._id.toString(),
+  // Push the review atomically so concurrent reviews cannot overwrite each
+  // other. The filter blocks a second review from the same user.
+  const updated = await productModel.findOneAndUpdate(
+    {
+      _id: req.params.id,
+      "reviews.user": { $ne: req.user._id },
+    },
+    {
+      $push: {
+        reviews: {
+          user: req.user._id,
+          rating,
+          comment,
+        },
+      },
+    },
+    { returnDocument: "after" },
   );
 
-  if (existingReview) {
+  if (!updated) {
     throw new ApiError(400, "You have already reviewed this product");
   }
 
-  product.reviews.push({
-    user: req.user._id,
-    rating,
-    comment,
-  });
+  // Recompute cached stats from the current review list.
+  await recalcReviewStats(req.params.id);
 
-  product.numberOfReviews = product.reviews.length;
-
-  product.averageRating =
-    product.reviews.reduce((sum, review) => sum + review.rating, 0) /
-    product.reviews.length;
-
-  await product.save();
+  const updatedProduct = await productModel.findById(req.params.id);
 
   return res.status(201).json({
     success: true,
     message: "Review added successfully",
-    product,
+    product: updatedProduct,
   });
 });
 
@@ -400,29 +444,34 @@ export const updateReview = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Product not found");
   }
 
-  // check review user === request user
-  const review = product.reviews.find(
-    (review) => review.user.toString() === req.user._id.toString(),
+  // Update the caller's own review atomically using the positional operator.
+  const updated = await productModel.findOneAndUpdate(
+    {
+      _id: req.params.id,
+      "reviews.user": req.user._id,
+    },
+    {
+      $set: {
+        "reviews.$.rating": rating,
+        "reviews.$.comment": comment,
+      },
+    },
+    { returnDocument: "after" },
   );
 
-  if (!review) {
+  if (!updated) {
     throw new ApiError(404, "Review not found");
   }
 
-  // update review
-  review.rating = rating;
-  review.comment = comment;
+  // Recompute cached stats from the current review list.
+  await recalcReviewStats(req.params.id);
 
-  product.averageRating =
-    product.reviews.reduce((sum, review) => sum + review.rating, 0) /
-    product.reviews.length;
-
-  await product.save();
+  const updatedProduct = await productModel.findById(req.params.id);
 
   return res.status(200).json({
     success: true,
     message: " Review updated successfully",
-    product,
+    product: updatedProduct,
   });
 });
 
@@ -434,34 +483,32 @@ export const deleteReview = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Product not found");
   }
 
-  const review = product.reviews.find(
-    (review) => review.user.toString() === req.user._id.toString(),
+  // Remove the caller's own review atomically.
+  const updated = await productModel.findOneAndUpdate(
+    {
+      _id: req.params.id,
+      "reviews.user": req.user._id,
+    },
+    {
+      $pull: {
+        reviews: { user: req.user._id },
+      },
+    },
+    { returnDocument: "after" },
   );
 
-  if (!review) {
+  if (!updated) {
     throw new ApiError(404, "Review not found");
   }
 
-  // delete review
-  product.reviews = product.reviews.filter(
-    (review) => review.user.toString() !== req.user._id.toString(),
-  );
+  // Recompute cached stats from the current review list.
+  await recalcReviewStats(req.params.id);
 
-  product.numberOfReviews = product.reviews.length;
-
-  if (product.reviews.length === 0) {
-    product.averageRating = 0;
-  } else {
-    product.averageRating =
-      product.reviews.reduce((sum, review) => sum + review.rating, 0) /
-      product.reviews.length;
-  }
-
-  await product.save();
+  const updatedProduct = await productModel.findById(req.params.id);
 
   return res.status(200).json({
     success: true,
     message: "Review deleted successfully",
-    product,
+    product: updatedProduct,
   });
 });
