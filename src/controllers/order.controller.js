@@ -7,6 +7,21 @@ import razorpay from "../services/razorpay.service.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 
+// Statuses where the stock reserved at order creation is still held for the
+// order, i.e. the items are still committed to fulfilling it.
+const STOCK_HELD_STATUSES = [
+  "pending",
+  "confirmed",
+  "processing",
+  "packed",
+  "shipped",
+  "out_for_delivery",
+  "delivered",
+];
+
+// Statuses where the reserved stock has been released back to inventory.
+const STOCK_RELEASED_STATUSES = ["cancelled", "returned", "refunded"];
+
 // create order controller
 export const createOrder = asyncHandler(async (req, res) => {
   const { addressId, paymentMethod } = req.body;
@@ -443,18 +458,54 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new ApiError(403, "You don't have access to this order ");
   }
 
-  // If a Cash on Delivery (COD) order is delivered,
-  // automatically mark the payment as paid.
-  order.status = status;
-  if (order.paymentMethod === "cod" && status === "delivered") {
-    order.paymentStatus = "paid";
-    order.paidAt = new Date();
-  }
-  if (status === "delivered") {
-    order.deliveredAt = new Date();
-  }
+  // Stock is reserved when the order is created. Release it back to
+  // inventory when the order is cancelled, returned or refunded, so the
+  // seller-driven path behaves like the user-driven cancel/return paths.
+  // The source status decides whether the stock is still held, which keeps
+  // the release idempotent (a "returned" order moving to "refunded" must
+  // not restore the stock a second time).
+  const shouldReleaseStock =
+    STOCK_RELEASED_STATUSES.includes(status) &&
+    STOCK_HELD_STATUSES.includes(order.status);
 
-  await order.save();
+  const session = await mongoose.startSession();
+
+  try {
+    await session.withTransaction(async () => {
+      if (shouldReleaseStock) {
+        for (const item of order.items) {
+          const result = await productModel.updateOne(
+            {
+              _id: item.product._id,
+            },
+            {
+              $inc: { stock: item.quantity },
+            },
+            { session },
+          );
+
+          if (result.matchedCount !== 1) {
+            throw new ApiError(404, "Product not found");
+          }
+        }
+      }
+
+      // If a Cash on Delivery (COD) order is delivered,
+      // automatically mark the payment as paid.
+      if (order.paymentMethod === "cod" && status === "delivered") {
+        order.paymentStatus = "paid";
+        order.paidAt = new Date();
+      }
+      if (status === "delivered") {
+        order.deliveredAt = new Date();
+      }
+
+      order.status = status;
+      await order.save({ session });
+    });
+  } finally {
+    await session.endSession();
+  }
 
   return res.status(200).json({
     success: true,
