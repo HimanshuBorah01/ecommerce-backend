@@ -96,6 +96,17 @@ export const verifyPayment = asyncHandler(async (req, res) => {
         return;
       }
 
+      // A cancelled / returned / refunded order must not be re-verified.
+      // Stock was already restored on cancel/return and must not be
+      // silently re-deducted (oversell / double-count).
+      const PAYABLE_STATUSES = ["pending", "confirmed"];
+      if (!PAYABLE_STATUSES.includes(order.status)) {
+        throw new ApiError(
+          400,
+          `Cannot verify payment for an order with status "${order.status}"`,
+        );
+      }
+
       // Allow retrying a failed payment by resetting it to pending.
       // Other statuses (e.g. refunded) cannot be re-verified.
       if (order.paymentStatus === "failed") {
