@@ -222,6 +222,7 @@ export const getMyOrderById = asyncHandler(async (req, res) => {
 export const cancelMyOrder = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
+  // Verify ownership and existence before starting the transaction.
   const order = await orderModel.findOne({
     _id: id,
     user: req.user._id,
@@ -238,16 +239,29 @@ export const cancelMyOrder = asyncHandler(async (req, res) => {
     "packed",
   ];
 
-  if (!cancellableStatuses.includes(order.status)) {
-    throw new ApiError(400, "Order can not be cancelled");
-  }
-
-  // Restore product stock that was reduced when the order was placed/paid.
+  // Restore product stock atomically with the status change so concurrent
+  // cancels cannot double-restore inventory. Only the first concurrent
+  // request actually transitions the status; the rest abort.
   const session = await mongoose.startSession();
+  let updated;
 
   try {
     await session.withTransaction(async () => {
-      for (const item of order.items) {
+      updated = await orderModel.findOneAndUpdate(
+        {
+          _id: id,
+          user: req.user._id,
+          status: { $in: cancellableStatuses },
+        },
+        { $set: { status: "cancelled" } },
+        { session, new: true },
+      );
+
+      if (!updated) {
+        throw new ApiError(400, "Order cannot be cancelled");
+      }
+
+      for (const item of updated.items) {
         const result = await productModel.updateOne(
           {
             _id: item.product,
@@ -262,9 +276,6 @@ export const cancelMyOrder = asyncHandler(async (req, res) => {
           throw new ApiError(404, "Product not found");
         }
       }
-
-      order.status = "cancelled";
-      await order.save({ session });
     });
   } finally {
     await session.endSession();
@@ -273,7 +284,7 @@ export const cancelMyOrder = asyncHandler(async (req, res) => {
   return res.status(200).json({
     success: true,
     message: "Order cancelled successfully",
-    order,
+    order: updated,
   });
 });
 
@@ -325,12 +336,33 @@ export const returnMyOrder = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Please provide a valid return reason");
   }
 
-  // Restore product stock
+  // Restore product stock atomically with the status change so concurrent
+  // returns cannot double-restore inventory.
   const session = await mongoose.startSession();
+  let updated;
 
   try {
     await session.withTransaction(async () => {
-      for (const item of order.items) {
+      updated = await orderModel.findOneAndUpdate(
+        {
+          _id: id,
+          user: req.user._id,
+          status: "delivered",
+        },
+        {
+          $set: {
+            status: "returned",
+            returnReason: reason.trim(),
+          },
+        },
+        { session, new: true },
+      );
+
+      if (!updated) {
+        throw new ApiError(400, "Order cannot be returned");
+      }
+
+      for (const item of updated.items) {
         const result = await productModel.updateOne(
           {
             _id: item.product,
@@ -345,10 +377,6 @@ export const returnMyOrder = asyncHandler(async (req, res) => {
           throw new ApiError(404, "Product not found");
         }
       }
-
-      order.status = "returned";
-      order.returnReason = reason.trim();
-      await order.save({ session });
     });
   } finally {
     await session.endSession();
@@ -358,7 +386,7 @@ export const returnMyOrder = asyncHandler(async (req, res) => {
     success: true,
     message:
       "Return request submitted successfully. Your items will be picked up soon.",
-    order,
+    order: updated,
   });
 });
 
