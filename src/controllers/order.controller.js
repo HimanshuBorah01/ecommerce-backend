@@ -476,8 +476,10 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     );
   }
 
-  // seller can only update own orders
-  const isSellerOrder = order.items.some(
+  // seller can only update orders where they own every item. Using .some()
+  // would let a seller who owns one item in a multi-seller order change the
+  // shared status (and payment/delivery timestamps) for every seller's items.
+  const isSellerOrder = order.items.every(
     (item) =>
       item.product &&
       item.product.seller.toString() === req.user._id.toString(),
