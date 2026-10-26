@@ -28,8 +28,11 @@ class AuthService {
       phone,
       password,
       confirmPassword,
-      role = "user",
     } = userData;
+
+    // Role is never set by the client during registration. New users always
+    // start as "user"; seller promotion is an admin-only action.
+    const role = "user";
 
     // Validate password confirmation
     if (password !== confirmPassword) {
