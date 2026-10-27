@@ -164,6 +164,21 @@ export const deleteMyProduct = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Product not found");
   }
 
+  // Block deletion if any live order still references this product so we do
+  // not orphan order items or destroy historical data. Cancelled / returned
+  // / refunded orders have already released their stock and are excluded.
+  const hasLiveOrders = await orderModel.exists({
+    "items.product": product._id,
+    status: { $nin: ["cancelled", "returned", "refunded"] },
+  });
+
+  if (hasLiveOrders) {
+    throw new ApiError(
+      400,
+      "Cannot delete product: it is referenced by active orders",
+    );
+  }
+
   // delete data from cloud storage service
   for (const image of product.images) {
     try {
