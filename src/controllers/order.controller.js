@@ -92,6 +92,7 @@ export const createOrder = asyncHandler(async (req, res) => {
         items.push({
           product: item.product._id,
           quantity: item.quantity,
+          price: item.product.price,
         });
         totalAmount += item.product.price * item.quantity;
       }

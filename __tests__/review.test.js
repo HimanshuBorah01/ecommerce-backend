@@ -56,9 +56,10 @@ async function createAddress(userId) {
 }
 
 async function createDeliveredOrder(userId, productId, addressId) {
+  const product = await productModel.findById(productId);
   return orderModel.create({
     user: userId,
-    items: [{ product: productId, quantity: 1 }],
+    items: [{ product: productId, quantity: 1, price: product.price }],
     totalAmount: 500,
     address: addressId,
     paymentMethod: "cod",

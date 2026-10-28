@@ -73,6 +73,11 @@ const orderSchema = mongoose.Schema(
           required: true,
           min: [1, "Quantity must be at least 1"],
         },
+        price: {
+          type: Number,
+          required: true,
+          min: [0, "Price cannot be negative"],
+        },
       },
     ],
 
