@@ -162,7 +162,7 @@ orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ paymentStatus: 1 });
 orderSchema.index({ razorpayOrderId: 1 }, { sparse: true });
-orderSchema.index({ razorpayPaymentId: 1 }, { sparse: true });
+orderSchema.index({ razorpayPaymentId: 1 }, { sparse: true, unique: true });
 
 const orderModel = mongoose.model("Order", orderSchema);
 

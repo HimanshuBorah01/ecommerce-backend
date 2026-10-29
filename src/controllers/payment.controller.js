@@ -120,6 +120,24 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       // Stock was already reserved when the order was created, so no
       // deduction is needed here. Just confirm the payment.
 
+      // Idempotency: the same Razorpay payment ID must not be reused to
+      // verify a different order (double-spend / cross-order replay).
+      const existingPayment = await orderModel
+        .findOne({
+          razorpayPaymentId: razorpay_payment_id,
+        })
+        .session(session);
+
+      if (
+        existingPayment &&
+        existingPayment._id.toString() !== order._id.toString()
+      ) {
+        throw new ApiError(
+          400,
+          "This payment has already been used for another order",
+        );
+      }
+
       order.paymentStatus = "paid";
       order.status = "confirmed";
       order.razorpayPaymentId = razorpay_payment_id;
