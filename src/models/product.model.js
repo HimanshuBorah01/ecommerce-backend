@@ -16,12 +16,20 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Product price is required"],
       min: [0, "Price cannot be negative"],
+      validate: {
+        validator: (value) => Number.isFinite(value),
+        message: "Price must be a finite number",
+      },
     },
     stock: {
       type: Number,
       required: [true, "Product stock is required"],
       default: 0,
       min: [0, "Stock cannot be negative"],
+      validate: {
+        validator: (value) => Number.isFinite(value),
+        message: "Stock must be a finite number",
+      },
     },
     category: {
       type: String,
