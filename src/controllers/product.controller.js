@@ -387,8 +387,8 @@ const recalcReviewStats = async (productId) => {
 export const addReview = asyncHandler(async (req, res) => {
   const { rating, comment = "" } = req.body;
 
-  if (rating < 1 || rating > 5) {
-    throw new ApiError(400, "Rating must be between 1 and 5");
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    throw new ApiError(400, "Rating must be an integer between 1 and 5");
   }
 
   const product = await productModel.findById(req.params.id);
@@ -449,8 +449,8 @@ export const addReview = asyncHandler(async (req, res) => {
 export const updateReview = asyncHandler(async (req, res) => {
   const { rating, comment = "" } = req.body;
 
-  if (rating < 1 || rating > 5) {
-    throw new ApiError(400, "Rating must be between 1 and 5");
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    throw new ApiError(400, "Rating must be an integer between 1 and 5");
   }
 
   const product = await productModel.findById(req.params.id);
