@@ -531,6 +531,13 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
         order.deliveredAt = new Date();
       }
 
+      // Reverse the payment when the order is refunded so the payment record
+      // matches the order status (a paid order that is refunded should no
+      // longer show as paid).
+      if (status === "refunded" && order.paymentStatus === "paid") {
+        order.paymentStatus = "refunded";
+      }
+
       order.status = status;
       await order.save({ session });
     });
