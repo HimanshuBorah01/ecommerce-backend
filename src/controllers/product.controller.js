@@ -91,11 +91,28 @@ export const updateProduct = asyncHandler(async (req, res) => {
 
   const { name, description, price, stock, category } = req.body;
 
+  // Validate numeric fields before mutating the model so invalid values are
+  // rejected early with a clear error instead of relying solely on schema
+  // validators (which run on save but may not catch every coercion edge case).
+  if (price !== undefined) {
+    const priceNum = Number(price);
+    if (!Number.isFinite(priceNum) || priceNum < 0) {
+      throw new ApiError(400, "Price must be a non-negative finite number");
+    }
+    product.price = priceNum;
+  }
+
+  if (stock !== undefined) {
+    const stockNum = Number(stock);
+    if (!Number.isInteger(stockNum) || stockNum < 0) {
+      throw new ApiError(400, "Stock must be a non-negative integer");
+    }
+    product.stock = stockNum;
+  }
+
   // updating product text data
   if (name) product.name = name;
   if (description) product.description = description;
-  if (price !== undefined) product.price = price;
-  if (stock !== undefined) product.stock = stock;
   if (category) product.category = category;
 
   const files = req.files;
