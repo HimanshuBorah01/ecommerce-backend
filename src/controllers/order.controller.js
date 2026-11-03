@@ -233,6 +233,16 @@ export const cancelMyOrder = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Order not found ");
   }
 
+  // A paid order (e.g. Razorpay) cannot be cancelled outright — the payment
+  // must be refunded first. COD orders that are still pending/confirmed can
+  // be cancelled because no money has changed hands yet.
+  if (order.paymentMethod === "razorpay" && order.paymentStatus === "paid") {
+    throw new ApiError(
+      400,
+      "Paid order cannot be cancelled. Request a refund instead.",
+    );
+  }
+
   const cancellableStatuses = [
     "pending",
     "confirmed",
@@ -487,6 +497,16 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   );
   if (!isSellerOrder) {
     throw new ApiError(403, "You don't have access to this order ");
+  }
+
+  // A paid order (e.g. Razorpay) cannot be cancelled outright — the payment
+  // must be refunded first. COD orders that are still pending/confirmed can
+  // be cancelled because no money has changed hands yet.
+  if (status === "cancelled" && order.paymentMethod === "razorpay" && order.paymentStatus === "paid") {
+    throw new ApiError(
+      400,
+      "Paid order cannot be cancelled. Request a refund instead.",
+    );
   }
 
   // Stock is reserved when the order is created. Release it back to
