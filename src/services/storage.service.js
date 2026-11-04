@@ -6,11 +6,11 @@ const imageKitClient = new ImageKit({
 });
 
 // upload data to storage service
-async function uploadFile(file) {
+async function uploadFile(file, fileName) {
   try {
     const result = await imageKitClient.files.upload({
       file,
-      fileName: file.originalname || `product_${Date.now()}`,
+      fileName: fileName || `product_${Date.now()}`,
       folder: "ecommerce-clone/ecom",
     });
 

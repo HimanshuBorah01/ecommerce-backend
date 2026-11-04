@@ -43,7 +43,7 @@ export const createProduct = asyncHandler(async (req, res) => {
 
     // image file is uploading in array using multer
     for (const file of files || []) {
-      const result = await uploadFile(file.buffer.toString("base64"));
+      const result = await uploadFile(file.buffer.toString("base64"), file.originalname);
       uploadedFileIds.push(result.fileId);
       imageUrls.push({
         url: result.url,
@@ -125,7 +125,7 @@ export const updateProduct = asyncHandler(async (req, res) => {
     // Upload new images FIRST so the old ones are only removed on success.
     try {
       for (const file of files) {
-        const result = await uploadFile(file.buffer.toString("base64"));
+        const result = await uploadFile(file.buffer.toString("base64"), file.originalname);
         newUploadedFileIds.push(result.fileId);
         imageUrls.push({
           url: result.url,
