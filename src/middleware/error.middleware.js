@@ -15,7 +15,13 @@ const errorMiddleware = (err, req, res, next) => {
   let error = err;
   // Handle invalid MongoDB ObjectId
   if (error.name === "CastError") {
-    error = new ApiError(404, "Resource not found");
+    // An invalid ObjectId *format* is a client error (400), not "not found" (404).
+    // A syntactically valid ObjectId that matches no document is a 404.
+    if (error.kind === "ObjectId") {
+      error = new ApiError(400, "Invalid ID format");
+    } else {
+      error = new ApiError(404, "Resource not found");
+    }
   }
 
   // Handle duplicate key errors
