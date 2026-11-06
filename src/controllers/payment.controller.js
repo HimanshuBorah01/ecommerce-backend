@@ -26,6 +26,29 @@ export const createRazorpayOrder = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Order not found");
   }
 
+  // Only Razorpay orders that are still awaiting payment can get a payment intent.
+  if (order.paymentMethod !== "razorpay") {
+    throw new ApiError(
+      400,
+      "Razorpay payment intent can only be created for Razorpay orders",
+    );
+  }
+
+  const PAYABLE_STATUSES = ["pending", "confirmed"];
+  if (!PAYABLE_STATUSES.includes(order.status)) {
+    throw new ApiError(
+      400,
+      `Cannot create Razorpay payment intent for an order with status "${order.status}"`,
+    );
+  }
+
+  if (order.paymentStatus !== "pending") {
+    throw new ApiError(
+      400,
+      `Order payment is already "${order.paymentStatus}"`,
+    );
+  }
+
   if (!order.razorpayOrderId) {
     const razorpayOrder = await razorpay.orders.create({
       amount: order.totalAmount * 100,
