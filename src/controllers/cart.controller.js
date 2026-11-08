@@ -22,12 +22,17 @@ const toCartEnvelope = (cartItems) => ({
 export const addToCart = asyncHandler(async (req, res) => {
   const { productId, quantity } = req.body;
 
+  // Coerce quantity to a number. express-validator's isInt() validates but
+  // does not convert, so a string quantity like "5" would cause string
+  // concatenation (3 + "5" = "35") instead of addition.
+  const qty = Number(quantity) || 1;
+
   const product = await productModel.findById(productId);
 
   if (!product) {
     throw new ApiError(404, "Product not found");
   }
-  if (product.stock < (quantity || 1)) {
+  if (product.stock < qty) {
     throw new ApiError(400, "Requested quantity exceeds available stock");
   }
 
@@ -38,7 +43,7 @@ export const addToCart = asyncHandler(async (req, res) => {
   });
 
   if (existingCartItem) {
-    const newQuantity = existingCartItem.quantity + (quantity || 1);
+    const newQuantity = existingCartItem.quantity + qty;
 
     if (newQuantity > product.stock) {
       throw new ApiError(400, "Requested quantity exceeds available stock");
@@ -60,7 +65,7 @@ export const addToCart = asyncHandler(async (req, res) => {
   const cart = await cartModel.create({
     user: req.user._id,
     product: productId,
-    quantity: quantity || 1,
+    quantity: qty,
   });
 
   const cartItems = await getCartItems(req.user._id);
@@ -122,7 +127,12 @@ export const updateCartItem = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { productId, quantity } = req.body;
 
-  if (!quantity || quantity < 1) {
+  // Coerce quantity to a number. express-validator's isInt() validates but
+  // does not convert, so a string quantity would pass validation but could
+  // be stored as a string or cause unexpected comparisons.
+  const qty = Number(quantity) || 1;
+
+  if (!qty || qty < 1) {
     throw new ApiError(400, "Quantity must be greater than 0");
   }
   let cartItem = null;
@@ -152,11 +162,11 @@ export const updateCartItem = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Product not found");
   }
 
-  if (quantity > product.stock) {
+  if (qty > product.stock) {
     throw new ApiError(400, "Requested quantity exceeds available stock");
   }
 
-  cartItem.quantity = quantity; //update quantity
+  cartItem.quantity = qty; //update quantity
   await cartItem.save();
   const cartItems = await getCartItems(req.user._id);
 
