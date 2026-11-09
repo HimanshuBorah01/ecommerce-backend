@@ -18,16 +18,19 @@ import emailService from "../services/email.service.js";
 export const subscribe = asyncHandler(async (req, res) => {
   const email = req.body.email;
 
-  const existing = await subscriptionModel.findOne({ email });
-
-  if (existing) {
-    return res.status(200).json({
-      success: true,
-      message: "You're already subscribed to our newsletter.",
-    });
+  try {
+    await subscriptionModel.create({ email });
+  } catch (error) {
+    // Handle duplicate key error (race condition where two concurrent
+    // requests for the same email both pass validation).
+    if (error.code === 11000) {
+      return res.status(200).json({
+        success: true,
+        message: "You're already subscribed to our newsletter.",
+      });
+    }
+    throw error;
   }
-
-  await subscriptionModel.create({ email });
 
   emailService
     .sendNewsletterWelcomeEmail(email)
