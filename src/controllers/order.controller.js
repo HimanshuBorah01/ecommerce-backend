@@ -331,12 +331,14 @@ export const returnMyOrder = asyncHandler(async (req, res) => {
     }
   }
 
-  const daysSinceDelivery = Math.floor(
-    (Date.now() - new Date(order.deliveredAt).getTime()) /
-      (1000 * 60 * 60 * 24),
-  );
+  // Use exact millisecond comparison so 7 days + 1ms is correctly rejected.
+  // Math.floor allows 7d 23h to pass; comparing against 7 * 24 * 60 * 60 * 1000
+  // milliseconds is precise.
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+  const msSinceDelivery = Date.now() - new Date(order.deliveredAt).getTime();
 
-  if (daysSinceDelivery > 7) {
+  if (msSinceDelivery > SEVEN_DAYS_MS) {
+    const daysSinceDelivery = Math.floor(msSinceDelivery / SEVEN_DAYS_MS);
     throw new ApiError(
       400,
       `Return window has expired. Orders can only be returned within 7 days of delivery (${daysSinceDelivery} days ago)`,
