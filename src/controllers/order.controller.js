@@ -405,9 +405,7 @@ export const returnMyOrder = asyncHandler(async (req, res) => {
 
 // get seller orders
 export const getSellerOrders = asyncHandler(async (req, res) => {
-  // Find all product IDs owned by this seller, then query only orders that
-  // contain at least one of those products. This keeps the query at the DB
-  // level instead of loading every order in the collection.
+  // Find all product IDs owned by this seller
   const sellerProductIds = await productModel
     .find({ seller: req.user._id }, { _id: 1 })
     .lean();
@@ -422,6 +420,7 @@ export const getSellerOrders = asyncHandler(async (req, res) => {
     });
   }
 
+  // Find orders containing at least one of the seller's products
   const orders = await orderModel
     .find({
       "items.product": { $in: productIdList },
@@ -431,10 +430,30 @@ export const getSellerOrders = asyncHandler(async (req, res) => {
       select: "name price images category seller",
     });
 
+  // Filter each order to only include items this seller owns
+  // This prevents leaking other sellers' items in multi-seller orders
+  const filteredOrders = orders.map((order) => {
+    const sellerItems = order.items.filter(
+      (item) =>
+        item.product &&
+        item.product.seller &&
+        item.product.seller.toString() === req.user._id.toString(),
+    );
+
+    // Return a plain object with only the seller's items
+    return {
+      ...order.toObject(),
+      items: sellerItems,
+    };
+  });
+
+  // Only return orders where the seller actually has items
+  const finalOrders = filteredOrders.filter((o) => o.items.length > 0);
+
   return res.status(200).json({
     success: true,
-    count: orders.length,
-    orders,
+    count: finalOrders.length,
+    orders: finalOrders,
   });
 });
 
