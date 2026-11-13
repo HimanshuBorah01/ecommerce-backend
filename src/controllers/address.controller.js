@@ -131,27 +131,39 @@ export const updateMyAddress = asyncHandler(async (req, res) => {
   if (pinCode) address.pinCode = pinCode;
   if (country) address.country = country;
   if (addressType) address.addressType = addressType;
-  // Ensure only one default address per user
-  if (isDefault === true) {
-    await addressModel.updateMany(
-      {
-        user: req.user._id,
-        isDefault: true,
-        _id: { $ne: address._id },
-      },
-      {
-        isDefault: false,
-      },
-    );
-  }
-  if (isDefault !== undefined) address.isDefault = isDefault;
+  // Ensure only one default address per user.
+  // The unset-others and the save run in a single transaction so two
+  // concurrent requests cannot both end up as the default address.
+  const session = await mongoose.startSession();
+  let savedAddress;
 
-  await address.save();
+  try {
+    await session.withTransaction(async () => {
+      if (isDefault === true) {
+        await addressModel.updateMany(
+          {
+            user: req.user._id,
+            isDefault: true,
+            _id: { $ne: address._id },
+          },
+          {
+            isDefault: false,
+          },
+          { session },
+        );
+      }
+      if (isDefault !== undefined) address.isDefault = isDefault;
+
+      savedAddress = await address.save({ session });
+    });
+  } finally {
+    await session.endSession();
+  }
 
   return res.status(200).json({
     success: true,
     message: "Address is updated successfully",
-    address,
+    address: savedAddress,
   });
 });
 
