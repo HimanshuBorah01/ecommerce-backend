@@ -19,31 +19,50 @@ export const createAddress = asyncHandler(async (req, res) => {
     isDefault,
   } = req.body;
 
-  // Ensure only one default address per user
-  if (isDefault) {
-    await addressModel.updateMany(
-      {
-        user: req.user._id,
-        isDefault: true,
-      },
-      {
-        isDefault: false,
-      },
-    );
+  // Ensure only one default address per user.
+  // The unset-others and the create run in a single transaction so two
+  // concurrent requests cannot both end up as the default address.
+  const session = await mongoose.startSession();
+  let address;
+
+  try {
+    await session.withTransaction(async () => {
+      if (isDefault) {
+        await addressModel.updateMany(
+          {
+            user: req.user._id,
+            isDefault: true,
+          },
+          {
+            isDefault: false,
+          },
+          { session },
+        );
+      }
+
+      const created = await addressModel.create(
+        [
+          {
+            user: req.user._id,
+            fullName,
+            phone,
+            addressLine1,
+            addressLine2,
+            city,
+            state,
+            pinCode,
+            country,
+            addressType,
+            isDefault,
+          },
+        ],
+        { session },
+      );
+      address = created[0];
+    });
+  } finally {
+    await session.endSession();
   }
-  const address = await addressModel.create({
-    user: req.user._id,
-    fullName,
-    phone,
-    addressLine1,
-    addressLine2,
-    city,
-    state,
-    pinCode,
-    country,
-    addressType,
-    isDefault,
-  });
 
   return res.status(200).json({
     success: true,
